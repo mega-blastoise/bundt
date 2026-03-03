@@ -1,0 +1,13 @@
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "files.exclude": {
+    "node_modules": true,
+    ".turbo": true,
+    "target": true
+  },
+  "editor.fontFamily": "Fira Code",
+  "editor.fontLigatures": true
+}

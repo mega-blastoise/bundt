@@ -1,0 +1,84 @@
+---
+title: Configuration
+description: Configure your Void Docs site
+---
+
+# Configuration
+
+Void Docs uses a TypeScript configuration file for type-safe, editor-friendly setup.
+
+## Config File
+
+Create `void.config.ts` in your project root:
+
+```typescript
+export default {
+  title: 'My Docs',
+  description: 'Documentation for my project',
+  base: '/',
+
+  navigation: [
+    { type: 'page', path: '/', title: 'Home' },
+    {
+      type: 'group',
+      title: 'Guides',
+      items: [
+        { type: 'page', path: '/installation', title: 'Installation' },
+        { type: 'page', path: '/usage', title: 'Usage' }
+      ]
+    }
+  ],
+
+  theme: {
+    preset: 'midnight',
+    accentColor: '#818cf8'
+  },
+
+  output: {
+    outDir: './dist'
+  }
+};
+```
+
+## Options Reference
+
+### `title`
+
+The site title. Appears in the header and page `<title>` tags.
+
+### `description`
+
+Default meta description for pages that don't specify their own.
+
+### `navigation`
+
+An array of navigation items. Each item is either a **page** or a **group**:
+
+```typescript
+// Page: links directly to a document
+{ type: 'page', path: '/quickstart', title: 'Quickstart' }
+
+// Group: contains nested items with a section header
+{
+  type: 'group',
+  title: 'Getting Started',
+  items: [
+    { type: 'page', path: '/install', title: 'Installation' },
+    { type: 'page', path: '/usage', title: 'Usage' }
+  ]
+}
+```
+
+### `theme`
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `preset` | `'midnight' \| 'ocean' \| 'forest' \| 'light'` | `'midnight'` | Color theme preset |
+| `accentColor` | `string` | Preset default | Override the accent color |
+| `darkMode` | `'class' \| 'media' \| 'force'` | `'force'` | Dark mode strategy |
+
+### `output`
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `outDir` | `string` | `'./dist'` | Build output directory |

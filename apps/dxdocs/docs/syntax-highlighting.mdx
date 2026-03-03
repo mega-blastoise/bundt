@@ -1,0 +1,78 @@
+---
+title: Syntax Highlighting
+description: Code block highlighting with Shiki
+---
+
+# Syntax Highlighting
+
+Code blocks are highlighted at build time using [Shiki](https://shiki.style) with the `github-dark-default` theme. No client-side JavaScript is needed — highlighted HTML is generated statically.
+
+## Usage
+
+Use standard fenced code blocks with a language identifier:
+
+````markdown
+```typescript
+const x = 42;
+```
+````
+
+## Supported Languages
+
+The following languages are loaded by default:
+
+| Language | Identifier |
+|----------|-----------|
+| TypeScript | `typescript`, `ts` |
+| JavaScript | `javascript`, `js` |
+| TSX | `tsx` |
+| JSX | `jsx` |
+| Bash | `bash`, `sh` |
+| JSON | `json` |
+| HTML | `html` |
+| CSS | `css` |
+| YAML | `yaml` |
+| Markdown | `markdown`, `md` |
+| Rust | `rust`, `rs` |
+
+Unrecognized languages fall back to plain text rendering.
+
+## Examples
+
+### TypeScript
+
+```typescript
+type Config = {
+  title: string;
+  theme: 'light' | 'dark' | 'media';
+};
+
+function loadConfig(path: string): Promise<Config> {
+  return Bun.file(path).json();
+}
+```
+
+### Bash
+
+```bash
+bun add @dxforge/docs
+bunx dxdocs build
+```
+
+### JSON
+
+```json
+{
+  "name": "@dxforge/docs",
+  "version": "0.1.0-alpha.1"
+}
+```
+
+### Rust
+
+```rust
+fn main() {
+    let greeting = "Hello from Rust";
+    println!("{greeting}");
+}
+```

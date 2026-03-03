@@ -1,0 +1,78 @@
+---
+title: Installation
+description: Install @dxforge/docs and create your first documentation site
+---
+
+# Installation
+
+Get up and running in under a minute.
+
+## Prerequisites
+
+- [Bun](https://bun.sh) v1.3 or later
+
+## Install
+
+```bash
+bun add @dxforge/docs
+```
+
+## Create Your First Page
+
+```bash
+mkdir docs
+```
+
+Create `docs/index.mdx`:
+
+```mdx
+---
+title: Welcome
+description: My project documentation
+---
+
+# Welcome
+
+This is my documentation site.
+```
+
+## Add Configuration
+
+Create `dxdocs.config.ts` in your project root:
+
+```typescript
+export default {
+  title: 'My Project',
+  navigation: [
+    { type: 'page', path: '/', title: 'Home' }
+  ]
+};
+```
+
+## Start Writing
+
+<Steps>
+  <Step title="Start the dev server">
+
+```bash
+bunx dxdocs dev
+```
+
+Opens at `http://localhost:3000` with live reload.
+
+  </Step>
+  <Step title="Edit your content">
+
+Save any `.mdx` file in `docs/` and the browser refreshes automatically.
+
+  </Step>
+  <Step title="Build for production">
+
+```bash
+bunx dxdocs build
+```
+
+Static HTML output in `./dist/`, ready to deploy anywhere.
+
+  </Step>
+</Steps>

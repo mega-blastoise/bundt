@@ -1,0 +1,35 @@
+[tools]
+bun = "1.3"
+node = "24"
+rust = "1.85"
+
+[env]
+_.path = ["{{config_root}}/node_modules/.bin"]
+
+# =============================================================================
+# Development
+# =============================================================================
+
+[tasks.build]
+description = "Build all packages"
+run = "turbo run build"
+
+[tasks.typecheck]
+description = "Typecheck all packages"
+run = "turbo run typecheck"
+
+[tasks.test]
+description = "Run all tests"
+run = "turbo run test"
+
+[tasks.lint]
+description = "Lint all packages"
+run = "turbo run lint"
+
+[tasks.clean]
+description = "Remove all build artifacts"
+run = "turbo run clean"
+
+[tasks.dev]
+description = "Start development mode"
+run = "turbo run dev"

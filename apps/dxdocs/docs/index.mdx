@@ -1,0 +1,58 @@
+---
+title: Introduction
+description: Beautiful documentation sites from MDX. Zero client JavaScript, pure static HTML.
+---
+
+# @dxforge/docs
+
+Build documentation sites with the visual polish of premium doc platforms and the simplicity of static generation — powered by React, MDX, and Bun.
+
+**Zero client JavaScript.** Every page is pre-rendered to pure static HTML. No framework runtime ships to your users.
+
+## Why @dxforge/docs?
+
+<CardGrid>
+  <Card title="Zero Runtime JS" href="/installation">
+    Pure static HTML output. No React, no hydration, no bundle shipped to users.
+  </Card>
+  <Card title="MDX-First" href="/writing-content">
+    Write Markdown with embedded React components. Frontmatter for metadata.
+  </Card>
+  <Card title="Beautiful Defaults" href="/theming">
+    Polished light and dark themes with automatic OS preference detection.
+  </Card>
+  <Card title="Fast Builds" href="/cli">
+    Sub-second builds powered by Bun. Live reload dev server included.
+  </Card>
+</CardGrid>
+
+## Quick Start
+
+```bash
+bun add @dxforge/docs
+mkdir docs
+echo '# Hello World' > docs/index.mdx
+bunx dxdocs dev
+```
+
+That's it. Open `http://localhost:3000` and start writing.
+
+## Feature Overview
+
+| Feature | Status |
+|---------|--------|
+| Static HTML generation | Available |
+| MDX with frontmatter | Available |
+| Built-in components | Available |
+| Shiki syntax highlighting | Available |
+| Light & dark themes | Available |
+| Table of contents | Available |
+| Dev server with live reload | Available |
+| Sidebar navigation | Available |
+| Full-text search | Planned |
+| Plugin system | Planned |
+| Custom themes | Planned |
+
+<Callout variant="tip">
+  This documentation site is built with @dxforge/docs itself.
+</Callout>

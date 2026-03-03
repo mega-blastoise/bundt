@@ -1,0 +1,102 @@
+---
+title: Writing Content
+description: How to write documentation with MDX
+---
+
+# Writing Content
+
+Write standard Markdown with optional React components. Every `.mdx` file in `docs/` becomes a page.
+
+## Frontmatter
+
+YAML frontmatter at the top of each file provides metadata:
+
+```mdx
+---
+title: My Page
+description: A brief summary for meta tags
+---
+
+# Content starts here
+```
+
+The `title` appears in the browser tab and can be used in navigation. The `description` populates the `<meta name="description">` tag.
+
+## Markdown
+
+All standard Markdown syntax is supported, plus GitHub Flavored Markdown when `gfm` is enabled (default).
+
+### Text
+
+```markdown
+**Bold**, *italic*, ~~strikethrough~~, `inline code`
+```
+
+**Bold**, *italic*, ~~strikethrough~~, `inline code`
+
+### Links
+
+```markdown
+[Internal link](/configuration)
+[External link](https://bun.sh)
+```
+
+### Lists
+
+```markdown
+- Unordered item
+- Another item
+  - Nested item
+
+1. First
+2. Second
+3. Third
+```
+
+### Blockquotes
+
+```markdown
+> Important note about something.
+```
+
+> Important note about something.
+
+### Tables
+
+```markdown
+| Column A | Column B |
+|----------|----------|
+| Cell 1   | Cell 2   |
+```
+
+| Column A | Column B |
+|----------|----------|
+| Cell 1   | Cell 2   |
+
+### Horizontal Rules
+
+```markdown
+---
+```
+
+## Headings and Table of Contents
+
+`h2` and `h3` headings are automatically extracted into the right-side table of contents. Each heading gets an `id` attribute for anchor linking.
+
+```markdown
+## This Becomes a ToC Entry
+### So Does This
+#### This Does Not
+```
+
+## Using Components
+
+Built-in components are available globally in all MDX files — no imports needed.
+
+```mdx
+<Callout variant="tip">
+  A helpful tip for your readers.
+</Callout>
+```
+
+See [Components](/components) for the full list.

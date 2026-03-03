@@ -1,0 +1,17 @@
+{
+  "name": "@bundt/signals",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "description": "Signal graph abstractions.",
+  "license": "MIT",
+  "engines": {
+    "bun": ">=1.3"
+  },
+  "scripts": {
+    "build": "echo 'TODO: implement'",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "clean": "rm -rf dist"
+  }
+}

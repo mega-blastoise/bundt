@@ -1,0 +1,155 @@
+---
+title: Deploying
+description: Deploy your documentation site to any static hosting provider
+---
+
+# Deploying
+
+@dxforge/docs generates pure static HTML. Deploy the output to any static hosting provider.
+
+## Build
+
+```bash
+bunx dxdocs build
+```
+
+This generates files in `./dist/` (or your configured `outDir`).
+
+## Hosting Providers
+
+### Cloudflare Pages
+
+Set build configuration in the dashboard:
+
+- **Build command:** `bunx dxdocs build`
+- **Build output directory:** `dist`
+
+### Netlify
+
+Create `netlify.toml`:
+
+```toml
+[build]
+  command = "bunx dxdocs build"
+  publish = "dist"
+```
+
+### GitHub Pages
+
+Add a workflow at `.github/workflows/docs.yml`:
+
+```yaml
+name: Deploy Docs
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: bunx dxdocs build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - uses: actions/deploy-pages@v4
+```
+
+### AWS (S3 + CloudFront + Route 53)
+
+This is the recommended approach for production documentation on a custom domain using AWS. You'll create an S3 bucket for storage, a CloudFront distribution for global CDN delivery, and Route 53 DNS records to point your domain at it.
+
+<Steps>
+  <Step title="Create an S3 bucket">
+    Create a bucket named after your domain (e.g. `docs.yourproject.com`). Disable "Block all public access" — CloudFront will serve the files, not S3 directly.
+
+    Upload your build output:
+
+    ```bash
+    bunx dxdocs build
+    aws s3 sync dist/ s3://docs.yourproject.com --delete
+    ```
+  </Step>
+  <Step title="Request an SSL certificate">
+    Open **AWS Certificate Manager** (ACM) in the **us-east-1** region (required for CloudFront). Request a public certificate for your domain (e.g. `docs.yourproject.com`). Validate via DNS — ACM will give you a CNAME record to add.
+
+    If your domain is on Hostinger, add the validation CNAME in Hostinger's DNS zone editor. Wait for the certificate status to show **Issued** (usually a few minutes).
+  </Step>
+  <Step title="Create a CloudFront distribution">
+    In the CloudFront console:
+
+    - **Origin domain:** Select your S3 bucket
+    - **Origin access:** Use Origin Access Control (OAC). CloudFront will prompt you to update the S3 bucket policy — apply it
+    - **Default root object:** `index.html`
+    - **Alternate domain name (CNAME):** `docs.yourproject.com`
+    - **Custom SSL certificate:** Select the ACM certificate from step 2
+    - **Cache policy:** `CachingOptimized` (recommended for static sites)
+
+    After creation, note the distribution domain name (e.g. `d1234abcd.cloudfront.net`).
+  </Step>
+  <Step title="Set up error pages for clean URLs">
+    dxdocs generates files like `/getting-started/index.html`. To make paths like `/getting-started` work without trailing slashes, add a custom error response in CloudFront:
+
+    - **Error code:** 403
+    - **Response page path:** `/index.html`
+    - **Response code:** 200
+
+    Alternatively, use a CloudFront Function to append `/index.html` to paths:
+
+    ```javascript
+    function handler(event) {
+      var request = event.request;
+      var uri = request.uri;
+      if (uri.endsWith('/')) {
+        request.uri += 'index.html';
+      } else if (!uri.includes('.')) {
+        request.uri += '/index.html';
+      }
+      return request;
+    }
+    ```
+
+    Attach this as a **viewer request** function on your distribution's default behavior.
+  </Step>
+  <Step title="Point your domain with Route 53 or Hostinger">
+    **If using Route 53:** Create a hosted zone for your domain, then add an A record with **Alias** pointing to your CloudFront distribution.
+
+    **If using Hostinger DNS:** Add a CNAME record in Hostinger's DNS zone editor:
+
+    - **Type:** CNAME
+    - **Name:** `docs` (or whatever subdomain you chose)
+    - **Target:** `d1234abcd.cloudfront.net` (your CloudFront distribution domain)
+    - **TTL:** 300
+
+    DNS propagation typically takes a few minutes.
+  </Step>
+  <Step title="Automate deploys">
+    Add a deploy script to your CI or run it locally:
+
+    ```bash
+    bunx dxdocs build
+    aws s3 sync dist/ s3://docs.yourproject.com --delete
+    aws cloudfront create-invalidation --distribution-id YOUR_DIST_ID --paths "/*"
+    ```
+
+    The invalidation clears CloudFront's cache so readers see updated content immediately.
+  </Step>
+</Steps>
+
+<Callout variant="tip">
+  Since dxdocs output is pure static HTML with inlined CSS, you can set aggressive cache headers. Add `Cache-Control: public, max-age=86400, stale-while-revalidate=604800` to your S3 metadata or CloudFront response headers policy for fast repeat visits.
+</Callout>
+
+### Any Static Host
+
+The `dist/` directory contains standalone HTML files. Upload them to any web server, CDN, or file host.
+
+<Callout variant="info">
+  Every page is a self-contained HTML file with inlined CSS. No JavaScript, no external dependencies at runtime.
+</Callout>

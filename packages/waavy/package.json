@@ -1,0 +1,82 @@
+{
+  "name": "@bundt/waavy",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "React SSR for non-JavaScript server environments.",
+  "license": "MIT",
+  "bin": {
+    "waavy": "./bin/waavy.js"
+  },
+  "keywords": [
+    "react",
+    "server-rendering",
+    "ssr",
+    "waavy",
+    "bun"
+  ],
+  "exports": {
+    "./browser": {
+      "default": "./out/browser.js",
+      "import": "./out/browser.js",
+      "types": "./out/lib/exports/browser.d.ts"
+    },
+    "./server": {
+      "default": "./out/server.js",
+      "import": "./out/server.js",
+      "types": "./out/lib/exports/server.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bin/waavy.js",
+    "bin/lib/",
+    "out/browser.js",
+    "out/browser.js.map",
+    "out/server.js",
+    "out/server.js.map",
+    "out/bun/",
+    "out/lib/",
+    "post-install.js",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "bun": ">=1.3"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "bundle": "NODE_ENV=production bun run build/index.ts --all",
+    "prebuild": "rm -rf out",
+    "build": "bun run typecheck && bun run bundle",
+    "test": "bun test",
+    "clean": "rm -rf out"
+  },
+  "dependencies": {
+    "cac": "^6.7.14",
+    "commander": "^14.0.0",
+    "debug": "^4.4.1",
+    "picocolors": "^1.1.1",
+    "printf": "^0.6.1"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@tanstack/react-query": "^5.62.3"
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/react-query": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/debug": "^4.1.12",
+    "@types/node": "^25.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@tanstack/react-query": "^5.62.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "typescript": "^5.9.0"
+  }
+}

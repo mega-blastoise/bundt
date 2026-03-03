@@ -1,0 +1,77 @@
+---
+title: Quickstart
+description: Get up and running with Void Docs in under 5 minutes
+---
+
+# Quickstart
+
+Get your documentation site up and running in under 5 minutes.
+
+## Prerequisites
+
+- [Bun](https://bun.sh) v1.3 or later
+- A directory of Markdown or MDX files
+
+## Installation
+
+```bash
+bun add void-docs
+```
+
+## Project Structure
+
+Create a simple project structure:
+
+```
+my-docs/
+├── docs/
+│   ├── index.mdx
+│   └── getting-started.mdx
+└── void.config.ts
+```
+
+## Configuration
+
+Create a `void.config.ts` in your project root:
+
+```typescript
+export default {
+  title: 'My Docs',
+  description: 'My documentation site',
+
+  navigation: [
+    { type: 'page', path: '/', title: 'Home' },
+    { type: 'page', path: '/getting-started', title: 'Getting Started' }
+  ],
+
+  theme: {
+    preset: 'midnight'
+  }
+};
+```
+
+## Development
+
+Start the dev server with live reload:
+
+```bash
+bun void-docs dev
+```
+
+This launches a local server at `http://localhost:3000` with automatic page refresh on file changes.
+
+## Build for Production
+
+Generate static HTML files:
+
+```bash
+bun void-docs build
+```
+
+Output lands in `./dist/` by default. Deploy these files to any static hosting provider — Vercel, Netlify, Cloudflare Pages, S3, or your own server.
+
+## Next Steps
+
+- Learn about [Configuration](/configuration) options
+- Explore [Writing Content](/writing-content) with MDX
+- See available [Components](/components)

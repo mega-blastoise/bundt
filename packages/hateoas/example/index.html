@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HATEOAS Task Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --border: #1e1e2e;
+      --text: #e0e0e8;
+      --text-dim: #8888a0;
+      --accent: #6c8cff;
+      --accent-hover: #8ca4ff;
+      --danger: #ff6b6b;
+      --success: #6bffa0;
+      --radius: 8px;
+      --font: system-ui, -apple-system, sans-serif;
+      --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    #root {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px;
+    }
+
+    header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    header span {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      background: var(--surface);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin-bottom: 16px;
+      color: var(--text-dim);
+    }
+
+    section { margin-bottom: 32px; }
+
+    /* Task list items */
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+      transition: border-color 0.15s;
+    }
+
+    .task-item:hover { border-color: var(--accent); }
+
+    .task-item .status {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      flex-shrink: 0;
+    }
+
+    .task-item .status--done { color: var(--success); }
+
+    .task-item .title {
+      flex: 1;
+      font-size: 0.95rem;
+    }
+
+    .task-item .title--done {
+      text-decoration: line-through;
+      color: var(--text-dim);
+    }
+
+    /* Links and buttons */
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+
+    a:hover { color: var(--accent-hover); }
+
+    button {
+      font-family: var(--font);
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    button.btn--danger:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    button.btn--primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0a0a0f;
+    }
+
+    button.btn--primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    /* Forms */
+    .create-form {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"], input:not([type]) {
+      font-family: var(--font);
+      font-size: 0.9rem;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      flex: 1;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus { border-color: var(--accent); }
+
+    input::placeholder { color: var(--text-dim); }
+
+    /* Detail view */
+    article {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+
+    article h2 {
+      color: var(--text);
+      font-size: 1.25rem;
+      margin-bottom: 12px;
+    }
+
+    article p {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .detail-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .detail-actions .spacer { flex: 1; }
+
+    /* Pagination */
+    nav {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      justify-content: center;
+    }
+
+    /* Update form in detail */
+    form {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    form > div {
+      margin-bottom: 12px;
+    }
+
+    form label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Loading / Error */
+    .loading, .error-msg, .empty {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-dim);
+      font-size: 0.9rem;
+    }
+
+    .error-msg { color: var(--danger); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/example/entry.tsx"></script>
+</body>
+</html>

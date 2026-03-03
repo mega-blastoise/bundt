@@ -1,0 +1,81 @@
+---
+title: CLI
+description: Command-line interface reference
+---
+
+# CLI
+
+The `dxdocs` CLI provides two commands for development and production builds.
+
+## dev
+
+Start a development server with live reload.
+
+```bash
+bunx dxdocs dev [port]
+```
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `port` | `3000` | Port number for the dev server |
+
+The dev server:
+- Watches `docs/` for file changes via chokidar
+- Automatically refreshes the browser on save (polling-based, 1s interval)
+- Renders pages on-demand (no build step)
+- Generates a 404 page for unknown routes
+
+```bash
+# Default port
+bunx dxdocs dev
+
+# Custom port
+bunx dxdocs dev 8080
+```
+
+## build
+
+Generate static HTML files for production deployment.
+
+```bash
+bunx dxdocs build
+```
+
+Output structure:
+
+```text
+dist/
+├── index.html
+├── quickstart/
+│   └── index.html
+├── guides/
+│   └── auth/
+│       └── index.html
+└── _manifest.json
+```
+
+Each page is pre-rendered to a standalone HTML file with all CSS inlined. No JavaScript is included in the output.
+
+The `_manifest.json` file contains:
+
+```json
+{
+  "version": "0.1.0-alpha.1",
+  "buildTime": "2026-03-01T00:00:00.000Z",
+  "routes": [
+    { "path": "/", "title": "Home", "description": "..." }
+  ]
+}
+```
+
+## help
+
+```bash
+bunx dxdocs --help
+```
+
+## version
+
+```bash
+bunx dxdocs --version
+```

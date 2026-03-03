@@ -1,0 +1,87 @@
+---
+title: Theming
+description: Customize the look and feel of your documentation site
+---
+
+# Theming
+
+@dxforge/docs ships with a polished default theme that supports light and dark modes. Customize it through the `theme` config.
+
+## Dark Mode
+
+Three strategies are available:
+
+```typescript
+export default {
+  theme: {
+    darkMode: 'media' // default — follows OS preference
+  }
+};
+```
+
+| Value | Behavior |
+|-------|----------|
+| `'media'` | Follows `prefers-color-scheme` media query |
+| `'light'` | Forces light mode |
+| `'dark'` | Forces dark mode |
+
+## Accent Color
+
+Override the default purple accent (`#7c3aed`) with any CSS color:
+
+```typescript
+export default {
+  theme: {
+    accentColor: '#2563eb' // blue
+  }
+};
+```
+
+The accent color is applied to:
+- Links
+- Active sidebar items
+- Active table of contents entries
+- Step indicators
+- Card hover borders
+
+## CSS Custom Properties
+
+The theme is built on CSS custom properties. All tokens use the `--void-` prefix:
+
+### Colors
+
+| Property | Description |
+|----------|-------------|
+| `--void-bg` | Page background |
+| `--void-bg-secondary` | Secondary background |
+| `--void-bg-code` | Code block background |
+| `--void-bg-sidebar` | Sidebar background |
+| `--void-text` | Primary text |
+| `--void-text-secondary` | Secondary text |
+| `--void-text-link` | Link color |
+| `--void-accent` | Accent color |
+| `--void-border` | Border color |
+
+### Layout
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `--void-sidebar-width` | `260px` | Sidebar width |
+| `--void-toc-width` | `220px` | Table of contents width |
+| `--void-header-height` | `60px` | Header height |
+| `--void-content-max-width` | `740px` | Max content width |
+| `--void-radius` | `8px` | Border radius |
+
+### Typography
+
+| Property | Default |
+|----------|---------|
+| `--void-font-sans` | Fira Sans, system fallbacks |
+| `--void-font-mono` | JetBrains Mono, monospace fallbacks |
+
+## Responsive Breakpoints
+
+The layout adapts at two breakpoints:
+
+- **< 1100px** — Table of contents is hidden
+- **< 768px** — Sidebar is hidden, content goes full-width

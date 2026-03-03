@@ -1,0 +1,81 @@
+---
+title: Writing Content
+description: Learn how to write documentation with MDX
+---
+
+# Writing Content
+
+Void Docs uses MDX — Markdown with embedded React components. Write natural Markdown and sprinkle in interactive components where needed.
+
+## Frontmatter
+
+Every page can include YAML frontmatter at the top:
+
+```markdown
+---
+title: My Page Title
+description: A brief description for meta tags
+---
+
+# Your content here
+```
+
+The `title` field is used in the page `<title>` tag and sidebar navigation.
+
+## Markdown Features
+
+All standard Markdown is supported, plus GitHub Flavored Markdown (GFM):
+
+### Text Formatting
+
+- **Bold text** with `**double asterisks**`
+- *Italic text* with `*single asterisks*`
+- `Inline code` with backticks
+- ~~Strikethrough~~ with `~~tildes~~`
+
+### Code Blocks
+
+Fenced code blocks with language highlighting:
+
+```typescript
+const greeting = 'Hello, Void Docs!';
+console.log(greeting);
+```
+
+### Tables
+
+| Column A | Column B | Column C |
+|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |
+
+### Blockquotes
+
+> Blockquotes are great for calling attention to important information without using a formal callout component.
+
+### Lists
+
+1. First ordered item
+2. Second ordered item
+3. Third ordered item
+
+- Unordered item
+- Another item
+  - Nested item
+
+## Using Components
+
+Import and use React components directly in your MDX:
+
+```mdx
+<Callout variant="tip">
+  This is a helpful tip for your readers.
+</Callout>
+
+<CardGrid>
+  <Card title="First Card" description="Description here" />
+  <Card title="Second Card" description="Another description" />
+</CardGrid>
+```
+
+See the [Components](/components) page for all available built-in components.

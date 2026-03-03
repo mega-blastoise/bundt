@@ -1,0 +1,1 @@
+export { setupBundleAction } from "./setup";

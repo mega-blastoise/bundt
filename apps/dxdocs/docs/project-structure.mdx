@@ -1,0 +1,70 @@
+---
+title: Project Structure
+description: How to organize your documentation project
+---
+
+# Project Structure
+
+A minimal @dxforge/docs project looks like this:
+
+```text
+my-project/
+├── docs/
+│   ├── index.mdx
+│   ├── getting-started.mdx
+│   └── guides/
+│       ├── first-guide.mdx
+│       └── second-guide.mdx
+├── dxdocs.config.ts
+└── package.json
+```
+
+## docs/
+
+All your content lives here. Any `.md` or `.mdx` file is discovered automatically and compiled to a page.
+
+### URL Mapping
+
+File paths map directly to URLs:
+
+| File | URL |
+|------|-----|
+| `docs/index.mdx` | `/` |
+| `docs/quickstart.mdx` | `/quickstart` |
+| `docs/guides/auth.mdx` | `/guides/auth` |
+| `docs/guides/index.mdx` | `/guides` |
+
+### Frontmatter
+
+Every page should include frontmatter with at least a `title`:
+
+```mdx
+---
+title: Page Title
+description: Optional meta description
+---
+```
+
+The `title` is used in the HTML `<title>` tag and can be referenced in navigation.
+
+## dxdocs.config.ts
+
+The configuration file. See [Configuration](/configuration) for all options.
+
+## Output
+
+Running `bunx dxdocs build` generates static HTML in `./dist/` (configurable). Each page becomes an `index.html` file in its URL path:
+
+```text
+dist/
+├── index.html          # /
+├── quickstart/
+│   └── index.html      # /quickstart
+├── guides/
+│   ├── auth/
+│   │   └── index.html  # /guides/auth
+│   └── index.html      # /guides
+└── _manifest.json
+```
+
+The `_manifest.json` contains build metadata and a list of all routes.

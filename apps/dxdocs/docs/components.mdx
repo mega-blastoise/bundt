@@ -1,0 +1,109 @@
+---
+title: Components
+description: Built-in MDX components available in all pages
+---
+
+# Components
+
+These components are available globally in every MDX file. No imports required.
+
+## Callout
+
+Highlight important information with styled callouts.
+
+<Callout variant="info">
+  This is an info callout for general information.
+</Callout>
+
+<Callout variant="tip">
+  This is a tip callout for helpful suggestions.
+</Callout>
+
+<Callout variant="warning">
+  This is a warning callout for things to watch out for.
+</Callout>
+
+<Callout variant="error">
+  This is an error callout for critical warnings.
+</Callout>
+
+```mdx
+<Callout variant="info">Your message here.</Callout>
+```
+
+### Callout Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `variant` | `'info' \| 'tip' \| 'warning' \| 'error'` | `'info'` | Visual style |
+| `children` | `ReactNode` | — | Content to display |
+
+## Card & CardGrid
+
+Link to related content with styled cards in a responsive grid.
+
+<CardGrid>
+  <Card title="Installation" href="/installation">Get up and running quickly</Card>
+  <Card title="Configuration" href="/configuration">Customize your site</Card>
+  <Card title="Writing Content" href="/writing-content">MDX authoring guide</Card>
+</CardGrid>
+
+```mdx
+<CardGrid>
+  <Card title="Title" href="/path">Description text</Card>
+</CardGrid>
+```
+
+### Card Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `title` | `string` | — | Card heading |
+| `icon` | `ReactNode` | — | Optional icon element |
+| `href` | `string` | — | Link URL (internal paths use client navigation) |
+| `children` | `ReactNode` | — | Card body content |
+
+### CardGrid Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `children` | `ReactNode` | `Card` elements |
+
+## Steps
+
+Display a numbered sequence of instructions.
+
+<Steps>
+  <Step title="Install the package">
+
+```bash
+bun add @dxforge/docs
+```
+
+  </Step>
+  <Step title="Create your content">
+
+Add `.mdx` files to the `docs/` directory.
+
+  </Step>
+  <Step title="Start the dev server">
+
+```bash
+bunx dxdocs dev
+```
+
+  </Step>
+</Steps>
+
+```mdx
+<Steps>
+  <Step title="Step Name">Content here</Step>
+</Steps>
+```
+
+### Step Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `title` | `string` | Step heading |
+| `children` | `ReactNode` | Step content |

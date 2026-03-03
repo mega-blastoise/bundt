@@ -1,0 +1,131 @@
+---
+title: Configuration
+description: All configuration options for @dxforge/docs
+---
+
+# Configuration
+
+Create `dxdocs.config.ts` in your project root. All options have sensible defaults — an empty config works fine.
+
+## Full Example
+
+```typescript
+export default {
+  title: 'My Project',
+  description: 'Documentation for my project',
+  base: '/',
+
+  navigation: [
+    { type: 'page', path: '/', title: 'Home' },
+    {
+      type: 'group',
+      title: 'Guides',
+      items: [
+        { type: 'page', path: '/install', title: 'Installation' },
+        { type: 'page', path: '/usage', title: 'Usage' }
+      ]
+    }
+  ],
+
+  headerLinks: [
+    { label: 'GitHub', href: 'https://github.com/you/repo', icon: 'github' }
+  ],
+
+  theme: {
+    accentColor: '#7c3aed',
+    darkMode: 'media'
+  },
+
+  mdx: {
+    extensions: ['.md', '.mdx'],
+    gfm: true
+  },
+
+  output: {
+    outDir: './dist'
+  }
+};
+```
+
+## Options Reference
+
+### title
+
+- **Type:** `string`
+- **Default:** `'DXDocs'`
+
+Site title displayed in the header and used in page `<title>` tags.
+
+### description
+
+- **Type:** `string`
+- **Default:** `''`
+
+Default meta description for pages without their own.
+
+### base
+
+- **Type:** `string`
+- **Default:** `'/'`
+
+Base URL path for the site.
+
+### navigation
+
+- **Type:** `NavigationItem[]`
+- **Default:** `[]` (auto-generated from files)
+
+Sidebar navigation structure. Each item is either a **page** or a **group**:
+
+```typescript
+// Direct page link
+{ type: 'page', path: '/quickstart', title: 'Quickstart' }
+
+// Group with nested pages
+{
+  type: 'group',
+  title: 'Getting Started',
+  items: [
+    { type: 'page', path: '/install', title: 'Installation' },
+    { type: 'page', path: '/usage', title: 'Usage' }
+  ]
+}
+```
+
+<Callout variant="info">
+  If `navigation` is empty, pages are auto-discovered from the `docs/` directory and listed alphabetically.
+</Callout>
+
+### headerLinks
+
+- **Type:** `HeaderLink[]`
+- **Default:** `[]`
+
+Links displayed in the site header.
+
+```typescript
+{ label: 'GitHub', href: 'https://github.com/...', icon: 'github' }
+{ label: 'Blog', href: 'https://blog.example.com', icon: 'external' }
+```
+
+The `icon` field accepts `'github'` or `'external'`.
+
+### theme
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `accentColor` | `string` | `'#7c3aed'` | Primary accent color for links, active states, and highlights |
+| `darkMode` | `'media' \| 'light' \| 'dark'` | `'media'` | `media` follows OS preference, `light`/`dark` forces a mode |
+
+### mdx
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `extensions` | `string[]` | `['.md', '.mdx']` | File extensions to treat as content |
+| `gfm` | `boolean` | `true` | Enable GitHub Flavored Markdown (tables, strikethrough, etc.) |
+
+### output
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `outDir` | `string` | `'./dist'` | Build output directory |
