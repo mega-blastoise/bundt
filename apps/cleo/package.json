@@ -5,7 +5,7 @@
   "description": "Claude extensions orchestrator. Manage, run, and share Claude Code agents and skills.",
   "license": "MIT",
   "bin": {
-    "cleo": "./bin/cleo.mjs",
+    "cleo": "./dist/cleo.mjs",
     "bun-cleo": "./bin/cleo.ts"
   },
   "keywords": [
@@ -43,10 +43,10 @@
     "build": "bun run build:bundle && bun run build:types",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "clean": "rm -rf dist",
-    "prerelease-check": "./scripts/prerelease-check.sh"
+    "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@bit-context-protocol/driver": "^0.1.0-alpha.0",
     "@inquirer/prompts": "^8.3.0",
     "cac": "^6.7.0",
     "front-matter": "^4.0.2",
@@ -57,6 +57,7 @@
   },
   "devDependencies": {
     "@bundt/internal-build-utils": "workspace:*",
+    "@bundt/internal-node-shim": "workspace:*",
     "@types/bun": "latest",
     "typescript": "^5.9.0"
   }

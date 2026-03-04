@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 
 import { runWithBun } from '@bundt/internal-node-shim';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 
-runWithBun(import.meta.url, {
+const distDir = dirname(fileURLToPath(import.meta.url));
+
+runWithBun({
   name: 'loclaude',
-  nodeFallback: '../dist/cli.js'
+  tsEntry: resolve(distDir, '../bin/loclaude.ts')
 });

@@ -7,7 +7,7 @@ interface TempFileOptions {
   extension: "js" | "jsx" | "ts" | "tsx";
 }
 
-export async function bundleInlineCode(
+export async function bundleInlineCodeToDir(
   code: string,
   tempFile: string,
   outdir: string,

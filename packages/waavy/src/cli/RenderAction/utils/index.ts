@@ -1,11 +1,13 @@
 import type { RenderActionOptions } from "@/types";
 
-export enum OutputStrategy {
-  NamedPipe,
-  SerializedJson,
-  StdoutString,
-  StdoutStream,
-}
+export const OutputStrategy = {
+  NamedPipe: 0,
+  SerializedJson: 1,
+  StdoutString: 2,
+  StdoutStream: 3,
+} as const;
+
+export type OutputStrategy = (typeof OutputStrategy)[keyof typeof OutputStrategy];
 
 /**
  * What is considered an "Output Strategy"?

@@ -1,5 +1,4 @@
-import { Command } from "commander";
-import { setupProgramActions, setupProgramMetadata } from "./cli/index";
+import cac from "cac";
 import { setupBundleAction } from "./cli/BundleAction";
 import { setupPrerenderAction } from "./cli/PreRenderAction";
 import { setupRenderAction } from "./cli/RenderAction";
@@ -9,13 +8,13 @@ import { getVersion } from "./utils";
 
 ProcessManager.setupHandlers();
 
-const program = new Command();
-setupProgramMetadata(program, getVersion() as string);
-setupProgramActions(program, [
-  setupBundleAction,
-  setupPrerenderAction,
-  setupStaticSiteGenAction,
-  setupRenderAction,
-]);
+const cli = cac("waavy");
+cli.version(getVersion() as string);
 
-program.parse(process.argv);
+setupBundleAction(cli);
+setupPrerenderAction(cli);
+setupStaticSiteGenAction(cli);
+setupRenderAction(cli);
+
+cli.help();
+cli.parse();

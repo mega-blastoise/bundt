@@ -12,7 +12,7 @@ export async function buildBunRuntimeOutput(options: BuildBunRuntimeOutputOption
   const {
     entrypoint,
     external,
-    root = "./lib",
+    root = "./src",
     verbose = false,
     overrides = {
       outdir: defaultBunOutputPath,
@@ -52,7 +52,7 @@ export async function buildBunRuntimeExecutable(verbose = false) {
     await buildBunRuntimeOutput({
       entrypoint: config.build.sources.cli.root,
       external: config.build.dependencies.external,
-      root: "./lib",
+      root: "./src",
       verbose,
       overrides: {
         outdir: path.resolve(config.build.output.directory, "bun"),

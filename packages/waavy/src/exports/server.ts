@@ -1,15 +1,15 @@
+// Runtime-agnostic server rendering (works with any JS runtime)
 export {
-  AbstractWaavyServer,
-  WaavyServer,
-  type IWaavyServer,
-  type IWaavyServerConstructorOptions,
-  type IWaavyServerHttpServiceRegistry,
-  type IWaavyServerHttpServiceRegistryKey,
-  type IWaavyServerHttpServiceRegistryHandler,
-  type IWaavyServerHttpWebServiceHandler,
-  type IWaavyServerHttpAPIServiceHandler,
-  type IAddWaavyServiceKey,
-  type RequestContext,
-} from "@/server/models/Server";
+  writeStaticComponentToFile,
+  transformComponentToString,
+  transformComponentToReadableStream,
+  pipeComponent,
+  pipeComponentToWritableCallbacks,
+  pipeComponentToWritableCallback,
+  pipeComponentToCollectedString,
+  pipeComponentToStdout,
+  pipeComponentToNodeStream,
+} from "@/server";
 
-export { default as Hydra, bundleInlineCode } from "@/server/models/Hydra";
+// Bun-specific: hydration bundling (requires Bun.build API)
+export { default as Hydra, bundleInlineCode, getNodeModulesWaavyCache, getTempFileInNodeModulesCache } from "@/server/models/Hydra";

@@ -1,6 +1,7 @@
-import { pc } from '../ui';
+import { pc, info, warn } from '../ui';
 import { SYSTEM_PROMPT } from '../prompt';
 import { smolResponseSchema, smolJsonSchema, type SmolResponse } from '../schema';
+import { prepareBcpContext } from '../integrations/bcp';
 
 export interface RunOptions {
   prompt: string;
@@ -31,7 +32,7 @@ async function findClaude(): Promise<string> {
   return text.trim();
 }
 
-export async function runCommand(task: string[], options: { model: string; maxBudget?: string }) {
+export async function runCommand(task: string[], options: { model: string; maxBudget?: string; bcp?: string; budget?: string }) {
   const prompt = task.join(' ');
 
   if (!prompt) {
@@ -45,10 +46,28 @@ export async function runCommand(task: string[], options: { model: string; maxBu
   console.log(pc.bold('Task: ') + prompt);
   console.log();
 
+  let bcpContext: string | undefined;
+  if (options.bcp) {
+    try {
+      const bcpResult = await prepareBcpContext({
+        filePath: options.bcp,
+        budget: options.budget ? Number(options.budget) : undefined
+      });
+      if (bcpResult) {
+        bcpContext = bcpResult.text;
+        info(`BCP context: ${bcpResult.blockCount} blocks, ${bcpResult.totalSize} bytes`);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      warn(`BCP context preparation failed: ${msg}`);
+    }
+  }
+
   const result = await run({
     prompt,
     model: options.model,
-    maxBudget: options.maxBudget ? Number(options.maxBudget) : undefined
+    maxBudget: options.maxBudget ? Number(options.maxBudget) : undefined,
+    bcpContext
   });
 
   const { response } = result;
@@ -84,20 +103,24 @@ export async function runCommand(task: string[], options: { model: string; maxBu
   console.log(`${pc.bold('Duration:')} ${pc.yellow(`${(result.durationMs / 1000).toFixed(1)}s`)}`);
 }
 
-async function run(options: RunOptions): Promise<RunResult> {
-  const { prompt, model, maxBudget } = options;
+async function run(options: RunOptions & { bcpContext?: string }): Promise<RunResult> {
+  const { prompt, model, maxBudget, bcpContext } = options;
   const start = performance.now();
   const claudePath = await findClaude();
 
   console.log(pc.dim(`Model: ${model} | Claude: ${claudePath}`));
   console.log(pc.dim('─'.repeat(50)));
 
+  const systemPrompt = bcpContext
+    ? `${SYSTEM_PROMPT}\n\n<bcp-context>\n${bcpContext}\n</bcp-context>`
+    : SYSTEM_PROMPT;
+
   const args = [
     claudePath,
     '--print',
     '--output-format', 'json',
     '--model', model,
-    '--system-prompt', SYSTEM_PROMPT,
+    '--system-prompt', systemPrompt,
     '--json-schema', smolJsonSchema,
     '--permission-mode', 'acceptEdits'
   ];

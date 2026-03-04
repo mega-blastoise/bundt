@@ -15,11 +15,11 @@ export default {
   build: {
     sources: {
       cli: {
-        root: "lib/index.ts",
+        root: "src/index.ts",
       },
       exports: {
-        server: "lib/exports/server.ts" as const,
-        browser: "lib/exports/browser.ts" as const,
+        server: "src/exports/server.ts" as const,
+        browser: "src/exports/browser.ts" as const,
       },
     },
     targets: [
@@ -71,7 +71,7 @@ export default {
       minify: true,
       sourcemap: "linked" as const,
       splitting: false,
-      root: "./lib",
+      root: "./src",
       packages: "bundle" as const,
       define: {
         "process.env.NODE_ENV": '"production"',

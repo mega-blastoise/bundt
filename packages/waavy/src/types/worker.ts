@@ -1,9 +1,11 @@
 import type { CacheEntryWithRenderOutput } from "@/cli/RenderAction/utils/cache/types";
 import type { RenderActionOptions, SerializableObject } from "./index";
 
-export enum WorkerMessageDataAction {
-  Cache = "cache",
-}
+export const WorkerMessageDataAction = {
+  Cache: "cache",
+} as const;
+
+export type WorkerMessageDataAction = (typeof WorkerMessageDataAction)[keyof typeof WorkerMessageDataAction];
 
 export interface WorkerMessageData<T = SerializableObject> {
   action: WorkerMessageDataAction;

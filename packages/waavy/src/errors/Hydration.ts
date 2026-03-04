@@ -1,14 +1,16 @@
 import CustomError from "./CustomError";
 
-export enum HydrationErrorEnum {
-  BundleFailed = "BUNDLE_FAILED",
-  InputDOesNotExist = "INPUT_DOES_NOT_EXIST",
-  Unknown = "UNKNOWN",
-}
+export const HydrationErrorEnum = {
+  BundleFailed: "BUNDLE_FAILED",
+  InputDoesNotExist: "INPUT_DOES_NOT_EXIST",
+  Unknown: "UNKNOWN",
+} as const;
+
+export type HydrationErrorEnum = (typeof HydrationErrorEnum)[keyof typeof HydrationErrorEnum];
 
 const HydrationErrorMessaging: Record<HydrationErrorEnum, string> = {
   [HydrationErrorEnum.BundleFailed]: "Failed to bundle hydration code",
-  [HydrationErrorEnum.InputDOesNotExist]: "Input does not exist",
+  [HydrationErrorEnum.InputDoesNotExist]: "Input does not exist",
   [HydrationErrorEnum.Unknown]: "Unknown error",
 };
 

@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 
 import { runWithBun } from '@bundt/internal-node-shim';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 
-runWithBun(import.meta.url, { name: 'cleo' });
+const distDir = dirname(fileURLToPath(import.meta.url));
+
+runWithBun({
+  name: 'cleo',
+  tsEntry: resolve(distDir, '../bin/cleo.ts')
+});

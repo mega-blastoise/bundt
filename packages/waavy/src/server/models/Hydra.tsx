@@ -109,8 +109,7 @@ export default class Hydra<Props> {
       );
 
       if (!result) {
-        console.error("Result is undefined");
-        process.exit(1);
+        throw new Error("Hydra.createBundle(): Bun.build returned undefined");
       }
 
       if (!result.success) {

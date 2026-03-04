@@ -1,20 +1,4 @@
-/**
- * Shared Node.js shim for @bundt CLI tools.
- *
- * Usage from a bin/*.mjs file:
- *
- *   import { runWithBun } from '@bundt/internal-node-shim';
- *   runWithBun(import.meta.url, { name: 'cleo' });
- *
- * Options:
- *   - name:        Tool name for user-facing messages
- *   - nodeFallback: Path to a Node-compatible bundle to use when Bun is unavailable
- *                   (if omitted, the shim will offer to install Bun instead)
- */
-
 import { execSync, spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve, basename } from 'node:path';
 
 function hasBun() {
   try {
@@ -26,9 +10,7 @@ function hasBun() {
 }
 
 async function installBun(name) {
-  const platform = process.platform;
-
-  if (platform === 'win32') {
+  if (process.platform === 'win32') {
     console.error(`\n${name} requires Bun (https://bun.sh).`);
     console.error('Install it with: powershell -c "irm bun.sh/install.ps1 | iex"');
     console.error(`\nThen re-run your ${name} command.`);
@@ -36,7 +18,6 @@ async function installBun(name) {
   }
 
   const { confirm } = await import('@inquirer/prompts');
-
   const shouldInstall = await confirm({
     message: `${name} requires Bun. Install it now?`,
     default: true
@@ -57,12 +38,7 @@ async function installBun(name) {
     process.exit(1);
   }
 
-  const bunPaths = [
-    `${process.env.HOME}/.bun/bin`,
-    `${process.env.HOME}/.local/bin`
-  ];
-
-  for (const p of bunPaths) {
+  for (const p of [`${process.env.HOME}/.bun/bin`, `${process.env.HOME}/.local/bin`]) {
     if (!process.env.PATH.includes(p)) {
       process.env.PATH = `${p}:${process.env.PATH}`;
     }
@@ -78,32 +54,16 @@ async function installBun(name) {
 }
 
 /**
- * @param {string} importMetaUrl - The import.meta.url of the calling .mjs file
- * @param {{ name: string, nodeFallback?: string }} options
+ * @param {{ name: string, tsEntry: string }} options
  */
-export async function runWithBun(importMetaUrl, options) {
-  const { name, nodeFallback } = options;
-  const callerPath = fileURLToPath(importMetaUrl);
-  const callerDir = dirname(callerPath);
-  const tsFile = resolve(callerDir, basename(callerPath, '.mjs') + '.ts');
+export async function runWithBun(options) {
+  const { name, tsEntry } = options;
 
-  if (hasBun()) {
-    const result = spawnSync('bun', ['run', tsFile, ...process.argv.slice(2)], {
-      stdio: 'inherit',
-      env: process.env
-    });
-    process.exit(result.status ?? 1);
+  if (!hasBun()) {
+    await installBun(name);
   }
 
-  if (nodeFallback) {
-    const fallbackPath = resolve(callerDir, nodeFallback);
-    await import(fallbackPath);
-    return;
-  }
-
-  await installBun(name);
-
-  const result = spawnSync('bun', ['run', tsFile, ...process.argv.slice(2)], {
+  const result = spawnSync('bun', ['run', tsEntry, ...process.argv.slice(2)], {
     stdio: 'inherit',
     env: process.env
   });

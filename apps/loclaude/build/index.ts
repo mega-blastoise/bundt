@@ -1,5 +1,6 @@
 import { resolve } from "path";
 import { concurrent_build } from "./utils";
+import { createNodeShimConfig } from "@bundt/internal-build-utils";
 import { bun_config } from "./bun_";
 import { node_config } from "./node_";
 
@@ -11,4 +12,5 @@ await Bun.$`mkdir -p ${distDir}`;
 await concurrent_build(
   bun_config as Bun.BuildConfig,
   node_config as Bun.BuildConfig,
+  createNodeShimConfig('loclaude') as Bun.BuildConfig,
 );

@@ -6,11 +6,13 @@ import MissingPeerDependencyError from "./MissingPeerDependency";
 import PropDataLoaderException from "./PropDataLoader";
 import UnserializableObjectError from "./UnserializableObjectError";
 
-export enum ErrorCodes {
-  ComponentNotFoundError = 24,
-  InvalidComponentFileExtensionError = 25,
-  PropDataLoaderThrewAnException = 26,
-}
+export const ErrorCodes = {
+  ComponentNotFoundError: 24,
+  InvalidComponentFileExtensionError: 25,
+  PropDataLoaderThrewAnException: 26,
+} as const;
+
+export type ErrorCodes = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 
 export async function handleError(
   error: unknown,

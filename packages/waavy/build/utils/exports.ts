@@ -12,7 +12,7 @@ export async function buildExports(verbose = false) {
         entrypoint: jsExport,
         target: jsExport.includes("browser") ? "browser" : "node",
         verbose,
-        root: "./lib/exports",
+        root: "./src/exports",
       });
     } catch (error) {
       log.extend("error")(`Node build failed: ${error}`);

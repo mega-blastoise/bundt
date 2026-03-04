@@ -14,6 +14,7 @@ import { historyCommand } from './commands/history';
 import { rollbackCommand } from './commands/rollback';
 import { searchCommand } from './commands/search';
 import { submitCommand } from './commands/submit';
+import { taskCommand } from './commands/task';
 
 const cli = cac('cleo');
 
@@ -21,7 +22,9 @@ cli
   .command('run [...task]', 'Run a task through Claude Code (headless, structured output)')
   .option('--model <model>', 'Model to use', { default: 'claude-sonnet-4-6' })
   .option('--max-budget <usd>', 'Maximum dollar budget for the run')
-  .action(async (task: string[], options: { model: string; maxBudget?: string }) => {
+  .option('--bcp <file>', 'Path to .bcp file for token-efficient context')
+  .option('--budget <tokens>', 'Token budget for BCP adaptive rendering')
+  .action(async (task: string[], options: { model: string; maxBudget?: string; bcp?: string; budget?: string }) => {
     try {
       await runCommand(task, options);
     } catch (err: unknown) {
@@ -101,6 +104,27 @@ cli
 cli
   .command('submit <type> <qualified-name>', 'Submit an agent or skill to the registry')
   .action(async (type: string, qualifiedName: string) => submitCommand(type, qualifiedName));
+
+cli
+  .command('task [...description]', 'Build token-efficient context and run a task through Claude')
+  .option('-t, --template <name>', 'Load a saved task template')
+  .option('-s, --save <name>', 'Save this task as a reusable template')
+  .option('-l, --list', 'List saved task templates')
+  .option('--global', 'Use global templates (~/.claude/tasks/)')
+  .option('--dry-run', 'Review context without executing')
+  .option('--max-budget <usd>', 'Maximum dollar budget for the run')
+  .action(async (
+    description: string[] | undefined,
+    opts: { template?: string; save?: string; list?: boolean; global?: boolean; dryRun?: boolean; maxBudget?: string }
+  ) => {
+    try {
+      await taskCommand(description, opts);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`Failed: ${message}`);
+      process.exit(1);
+    }
+  });
 
 cli.help(() => {
   console.log(BANNER);

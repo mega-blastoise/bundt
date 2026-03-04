@@ -18,10 +18,19 @@
     "test": "turbo run test",
     "lint": "turbo run lint",
     "clean": "turbo run clean",
-    "dev": "turbo run dev"
+    "dev": "turbo run dev",
+    "bump": "bun scripts/bump.ts",
+    "release": "bun scripts/release.ts"
+  },
+  "overrides": {
+    "@bit-context-protocol/driver": "file:///home/nicks-dgx/dev/.RFCs/bit-context-protocol/packages/driver"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/semver": "^7.7.1",
+    "cac": "^7.0.0",
+    "picocolors": "^1.1.1",
+    "semver": "^7.7.4",
     "turbo": "^2.7.5",
     "typescript": "^5.9.0"
   }

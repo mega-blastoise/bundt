@@ -2,7 +2,7 @@ import React from "react"
 import path from "path";
 import { writeStaticComponentToFile } from "@/server";
 import {
-  bundleInlineCode,
+  bundleInlineCodeToDir,
   getTempFileInNodeModulesCache,
   handleHydrationBundleOutput,
 } from "@/server/hydration";
@@ -40,7 +40,7 @@ export async function handleStaticRoute<Props>(
     const extension = path.extname(filename).slice(1) as "js" | "jsx" | "ts" | "tsx";
     const tempFile = await getTempFileInNodeModulesCache({ extension });
     const code = useNonWaavyHydrationBundleTemplate(tempFile, filename, props as any);
-    const bundle = await bundleInlineCode(code, tempFile, outdir);
+    const bundle = await bundleInlineCodeToDir(code, tempFile, outdir);
     handleHydrationBundleOutput(filename, bundle);
 
     writeStaticComponentToFile(React.createElement(Component as React.FunctionComponent<typeof props>, props as any), {

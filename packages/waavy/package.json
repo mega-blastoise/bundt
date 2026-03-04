@@ -15,15 +15,20 @@
     "bun"
   ],
   "exports": {
+    ".": {
+      "types": "./out/src/exports/server.d.ts",
+      "import": "./out/server.js",
+      "default": "./out/server.js"
+    },
     "./browser": {
-      "default": "./out/browser.js",
+      "types": "./out/src/exports/browser.d.ts",
       "import": "./out/browser.js",
-      "types": "./out/lib/exports/browser.d.ts"
+      "default": "./out/browser.js"
     },
     "./server": {
-      "default": "./out/server.js",
+      "types": "./out/src/exports/server.d.ts",
       "import": "./out/server.js",
-      "types": "./out/lib/exports/server.d.ts"
+      "default": "./out/server.js"
     },
     "./package.json": "./package.json"
   },
@@ -35,7 +40,7 @@
     "out/server.js",
     "out/server.js.map",
     "out/bun/",
-    "out/lib/",
+    "out/src/",
     "post-install.js",
     "CHANGELOG.md",
     "LICENSE"
@@ -45,15 +50,15 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "build:types": "tsc -p tsconfig.build.json",
     "bundle": "NODE_ENV=production bun run build/index.ts --all",
     "prebuild": "rm -rf out",
-    "build": "bun run typecheck && bun run bundle",
+    "build": "bun run typecheck && bun run bundle && bun run build:types",
     "test": "bun test",
     "clean": "rm -rf out"
   },
   "dependencies": {
     "cac": "^6.7.14",
-    "commander": "^14.0.0",
     "debug": "^4.4.1",
     "picocolors": "^1.1.1",
     "printf": "^0.6.1"

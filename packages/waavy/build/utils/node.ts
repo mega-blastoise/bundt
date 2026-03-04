@@ -5,7 +5,7 @@ import log from "./log";
 import path from "path";
 
 export async function buildESMOutput(options: BuildESMRuntimeOutputOptions) {
-  const { entrypoint, root = "./lib", target, verbose = false, overrides = {} } = options;
+  const { entrypoint, root = "./src", target, verbose = false, overrides = {} } = options;
   let succeeded = true;
   const startTime = performance.now();
   try {
@@ -43,7 +43,7 @@ export async function buildJavascriptRuntimeCommands(verbose = false) {
     buildESMOutput({
       entrypoint: command,
       target: "node",
-      root: "./lib/commands",
+      root: "./src/commands",
       verbose,
       overrides: {
         outdir: path.resolve(config.build.output.directory, "commands"),
