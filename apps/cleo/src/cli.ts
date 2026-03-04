@@ -15,6 +15,7 @@ import { rollbackCommand } from './commands/rollback';
 import { searchCommand } from './commands/search';
 import { submitCommand } from './commands/submit';
 import { taskCommand } from './commands/task';
+import { startTui } from './tui/index';
 
 const cli = cac('cleo');
 
@@ -126,9 +127,21 @@ cli
     }
   });
 
+cli
+  .command('tui', 'Launch interactive TUI for managing multiple Claude Code sessions')
+  .action(async () => {
+    try {
+      await startTui();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`Failed: ${message}`);
+      process.exit(1);
+    }
+  });
+
 cli.help(() => {
   console.log(BANNER);
 });
 
-cli.version('0.1.0');
+cli.version('0.1.0-alpha.0');
 cli.parse();

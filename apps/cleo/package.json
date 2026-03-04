@@ -1,9 +1,18 @@
 {
   "name": "@bundt/cleo",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.0",
   "type": "module",
   "description": "Claude extensions orchestrator. Manage, run, and share Claude Code agents and skills.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mega-blastoise/bundt.git",
+    "directory": "apps/cleo"
+  },
+  "homepage": "https://github.com/mega-blastoise/bundt/tree/main/apps/cleo",
+  "bugs": {
+    "url": "https://github.com/mega-blastoise/bundt/issues"
+  },
   "bin": {
     "cleo": "./dist/cleo.mjs",
     "bun-cleo": "./bin/cleo.ts"
@@ -15,7 +24,9 @@
     "skills",
     "cli",
     "bun",
-    "ai"
+    "ai",
+    "mcp",
+    "orchestrator"
   ],
   "exports": {
     ".": {
@@ -32,6 +43,10 @@
     "CHANGELOG.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "engines": {
     "bun": ">=1.3"
   },

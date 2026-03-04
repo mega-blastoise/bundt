@@ -1,11 +1,29 @@
 import pc from 'picocolors';
 
+const ART = [
+  ' ┌─╮  │    ┌──  ┌─╮',
+  ' │    │    ├──  │ │',
+  ' └─╯  └──  └──  └─╯',
+] as const;
+
+const GRAD = [pc.cyan, pc.blue, pc.magenta] as const;
+
+function gradLine(line: string, row: number): string {
+  const n = line.length;
+  return [...line].map((ch, col) => {
+    if (ch === ' ') return ch;
+    const t = (col / n) * 0.7 + (row / Math.max(ART.length - 1, 1)) * 0.3;
+    const idx = Math.min(Math.floor(t * GRAD.length), GRAD.length - 1);
+    return pc.bold(GRAD[idx]!(ch));
+  }).join('');
+}
+
 export const BANNER = [
   '',
-  pc.cyan('  ╔═══════════════════════════════════════╗'),
-  pc.cyan('  ║  ') + pc.magenta('⚡') + pc.bold(pc.white(' C L E O')) + pc.dim('  claude extensions    ') + pc.cyan('║'),
-  pc.cyan('  ╚═══════════════════════════════════════╝'),
-  ''
+  ...ART.map((line, i) => '  ' + gradLine(line, i)),
+  pc.dim('  ' + '─'.repeat(30)),
+  '  ' + pc.dim('claude extensions orchestrator'),
+  '',
 ].join('\n');
 
 export const success = (msg: string) => console.log(pc.green('✔') + ' ' + msg);

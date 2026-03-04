@@ -1,5 +1,7 @@
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve, relative } from 'node:path';
+import { readFileSync, existsSync, statSync, readdirSync, writeFileSync, unlinkSync } from 'node:fs';
+import { resolve, join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { randomBytes } from 'node:crypto';
 import { createContext, buildAndDecodeContext, isBcpAvailable } from '../integrations/bcp';
 import { pc, info, warn, sep, heading } from '../ui';
 import { SYSTEM_PROMPT } from '../prompt';
@@ -47,6 +49,29 @@ const runCommand = async (cmd: string): Promise<string> => {
   return stdout + (stderr ? `\n${stderr}` : '');
 };
 
+const expandPath = (filePath: string): string[] => {
+  const absPath = resolve(process.cwd(), filePath);
+  if (!existsSync(absPath)) return [];
+  const stat = statSync(absPath);
+  if (stat.isFile()) return [filePath];
+  if (stat.isDirectory()) {
+    const entries: string[] = [];
+    const walk = (dir: string, relBase: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const rel = relBase ? `${relBase}/${entry.name}` : entry.name;
+        if (entry.isFile()) {
+          entries.push(`${filePath}/${rel}`);
+        } else if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+          walk(`${dir}/${entry.name}`, rel);
+        }
+      }
+    };
+    walk(absPath, '');
+    return entries;
+  }
+  return [];
+};
+
 const assembleContext = async (task: TaskDefinition): Promise<{ text: string; blockCount: number; totalSize: number } | null> => {
   const available = await isBcpAvailable();
   if (!available) {
@@ -56,18 +81,21 @@ const assembleContext = async (task: TaskDefinition): Promise<{ text: string; bl
 
   const ctx = createContext(`Task: ${task.description}`);
 
-  // Add files
+  // Add files (expanding directories recursively)
   for (const file of task.files) {
-    const absPath = resolve(process.cwd(), file.path);
-    if (!existsSync(absPath)) {
+    const expanded = expandPath(file.path);
+    if (expanded.length === 0) {
       warn(`Skipping missing file: ${file.path}`);
       continue;
     }
-    const content = readFileSync(absPath, 'utf8');
-    ctx.addFile(file.path, content, {
-      priority: file.priority,
-      summary: file.summary
-    });
+    for (const filePath of expanded) {
+      const absPath = resolve(process.cwd(), filePath);
+      const content = readFileSync(absPath, 'utf8');
+      ctx.addFile(filePath, content, {
+        priority: file.priority,
+        summary: file.summary
+      });
+    }
   }
 
   // Run commands and capture output
@@ -110,10 +138,12 @@ const buildFallbackContext = async (task: TaskDefinition): Promise<string> => {
   const parts: string[] = [];
 
   for (const file of task.files) {
-    const absPath = resolve(process.cwd(), file.path);
-    if (!existsSync(absPath)) continue;
-    const content = readFileSync(absPath, 'utf8');
-    parts.push(`<file path="${file.path}">\n${content}\n</file>`);
+    const expanded = expandPath(file.path);
+    for (const filePath of expanded) {
+      const absPath = resolve(process.cwd(), filePath);
+      const content = readFileSync(absPath, 'utf8');
+      parts.push(`<file path="${filePath}">\n${content}\n</file>`);
+    }
   }
 
   for (const cmd of task.commands) {
@@ -160,12 +190,21 @@ export const executeTask = async (task: TaskDefinition): Promise<ExecuteResult> 
     ? `${SYSTEM_PROMPT}\n\n<context>\n${contextText}\n</context>`
     : SYSTEM_PROMPT;
 
+  // Write system prompt to a temp file to avoid E2BIG (ARG_MAX) when context is large.
+  // Then pipe it to claude via stdin as the prompt, embedding the task description within it.
+  const promptWithContext = contextText
+    ? `${task.description}\n\n<system-context>\n${contextText}\n</system-context>`
+    : task.description;
+
+  const tmpPromptFile = join(tmpdir(), `cleo-task-${randomBytes(8).toString('hex')}.txt`);
+  writeFileSync(tmpPromptFile, promptWithContext, 'utf8');
+
   const args = [
     claudePath,
     '--print',
     '--output-format', 'json',
     '--model', task.model,
-    '--system-prompt', systemPrompt,
+    '--system-prompt', SYSTEM_PROMPT,
     '--json-schema', smolJsonSchema,
     '--permission-mode', 'acceptEdits'
   ];
@@ -174,11 +213,18 @@ export const executeTask = async (task: TaskDefinition): Promise<ExecuteResult> 
     args.push('--max-budget-usd', String(task.maxBudgetUsd));
   }
 
-  args.push(task.description);
-
-  const proc = Bun.spawn(args, { stdout: 'pipe', stderr: 'pipe', env: { ...process.env } });
+  // Pipe prompt from file via stdin to avoid argv size limits
+  const promptHandle = Bun.file(tmpPromptFile);
+  const proc = Bun.spawn(args, {
+    stdout: 'pipe',
+    stderr: 'pipe',
+    stdin: promptHandle.stream(),
+    env: { ...process.env },
+  });
   const stdout = await new Response(proc.stdout).text();
   await proc.exited;
+
+  try { unlinkSync(tmpPromptFile); } catch { /* ignore */ }
 
   if (proc.exitCode !== 0) {
     const stderr = await new Response(proc.stderr).text();
