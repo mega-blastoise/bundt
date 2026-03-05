@@ -16,22 +16,29 @@
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "lint": "turbo run lint",
+    "lint": "eslint .",
     "clean": "turbo run clean",
     "dev": "turbo run dev",
     "bump": "bun scripts/bump.ts",
-    "release": "bun scripts/release.ts"
+    "release": "bun scripts/release.ts",
+    "docs:dev": "cd docs && bun run ../apps/dxdocs/src/cli.ts dev",
+    "docs:build": "cd docs && bun run ../apps/dxdocs/src/cli.ts build",
+    "create-package": "bun scripts/create-package.ts"
   },
   "overrides": {
     "@bit-context-protocol/driver": "file:///home/nicks-dgx/dev/.RFCs/bit-context-protocol/packages/driver"
   },
   "devDependencies": {
+    "@inquirer/prompts": "^8.3.0",
     "@types/bun": "latest",
     "@types/semver": "^7.7.1",
     "cac": "^7.0.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-simple-import-sort": "^12.0.0",
     "picocolors": "^1.1.1",
     "semver": "^7.7.4",
     "turbo": "^2.7.5",
-    "typescript": "^5.9.0"
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.0.0"
   }
 }

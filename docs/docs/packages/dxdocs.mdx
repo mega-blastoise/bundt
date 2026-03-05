@@ -1,0 +1,107 @@
+---
+title: DXDocs
+---
+
+# DXDocs
+
+Zero-JS static documentation sites from Markdown and MDX. Beautiful output with no client-side JavaScript.
+
+## Install
+
+```sh
+bun add @bundt/dxdocs
+```
+
+## Quick Start
+
+### 1. Create a Config
+
+Create `dxdocs.config.ts` in your project root:
+
+```ts
+export default {
+  title: 'My Project',
+  description: 'Project documentation',
+  navigation: [
+    { type: 'page', path: '/', title: 'Home' },
+    { type: 'page', path: '/guide', title: 'Guide' }
+  ],
+  theme: {
+    accentColor: '#3B82F6'
+  }
+};
+```
+
+### 2. Write Documentation
+
+Create a `docs/` directory with `.md` or `.mdx` files:
+
+```md
+---
+title: Home
+---
+
+# Welcome
+
+Your documentation content here.
+```
+
+### 3. Build
+
+```sh
+bunx dxdocs build
+```
+
+The static site is generated to `./dist` by default.
+
+### 4. Develop
+
+```sh
+bunx dxdocs dev
+```
+
+Starts a dev server on port 3000 with live reload.
+
+## Configuration
+
+The config file supports these options:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `title` | `string` | `'DXDocs'` | Site title |
+| `description` | `string` | `''` | Site description |
+| `base` | `string` | `'/'` | Base URL path |
+| `logo` | `string` | — | Path to logo image |
+| `favicon` | `string` | — | Path to favicon |
+| `navigation` | `NavigationItem[]` | `[]` | Sidebar navigation tree |
+| `headerLinks` | `HeaderLink[]` | `[]` | Header navigation links |
+| `theme.accentColor` | `string` | — | Primary accent color |
+| `theme.darkMode` | `'media' \| 'light' \| 'dark'` | `'media'` | Dark mode behavior |
+| `output.outDir` | `string` | `'./dist'` | Build output directory |
+
+## Navigation
+
+Navigation supports pages and nested groups:
+
+```ts
+navigation: [
+  { type: 'page', path: '/', title: 'Home' },
+  {
+    type: 'group',
+    title: 'Guide',
+    items: [
+      { type: 'page', path: '/guide/setup', title: 'Setup' },
+      { type: 'page', path: '/guide/deploy', title: 'Deploy' }
+    ]
+  }
+]
+```
+
+## Header Links
+
+```ts
+headerLinks: [
+  { label: 'GitHub', href: 'https://github.com/...', icon: 'github' },
+  { label: 'Blog', href: 'https://blog.example.com', icon: 'external' }
+]
+```

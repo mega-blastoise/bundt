@@ -1,0 +1,81 @@
+---
+title: HATEOAS
+---
+
+# HATEOAS
+
+A minimal React framework for building HATEOAS-compliant REST applications. Hypermedia as the engine of application state — in React.
+
+## Install
+
+```sh
+bun add @bundt/hateoas
+```
+
+Requires `react` and `react-dom` as peer dependencies.
+
+## Overview
+
+`@bundt/hateoas` provides four entry points for different concerns:
+
+| Entry | Import | Purpose |
+|-------|--------|---------|
+| Root | `@bundt/hateoas` | Core types and utilities |
+| Server | `@bundt/hateoas/server` | Server-side resource handlers |
+| Client | `@bundt/hateoas/client` | Client-side fetching and caching |
+| React | `@bundt/hateoas/react` | React hooks and components |
+| Protocol | `@bundt/hateoas/protocol` | HATEOAS link relation types and helpers |
+
+## Basic Usage
+
+### Define a Resource (Server)
+
+```ts
+import { createResource } from '@bundt/hateoas/server';
+
+const usersResource = createResource('/users', {
+  get: async (req) => {
+    const users = await db.getUsers();
+    return {
+      data: users,
+      links: [
+        { rel: 'self', href: '/users' },
+        { rel: 'create', href: '/users', method: 'POST' }
+      ]
+    };
+  }
+});
+```
+
+### Consume a Resource (React)
+
+```tsx
+import { useResource } from '@bundt/hateoas/react';
+
+function UserList() {
+  const { data, links } = useResource('/users');
+
+  return (
+    <ul>
+      {data.map(user => (
+        <li key={user.id}>{user.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+### Follow Links (Client)
+
+```ts
+import { followLink } from '@bundt/hateoas/client';
+
+const createLink = response.links.find(l => l.rel === 'create');
+if (createLink) {
+  await followLink(createLink, { body: { name: 'New User' } });
+}
+```
+
+## Protocol
+
+The protocol module defines standard HATEOAS link relations and provides type-safe helpers for constructing and validating hypermedia responses. Use it to ensure your API responses conform to HATEOAS conventions regardless of server framework.

@@ -24,7 +24,7 @@ run = "turbo run test"
 
 [tasks.lint]
 description = "Lint all packages"
-run = "turbo run lint"
+run = "eslint ."
 
 [tasks.clean]
 description = "Remove all build artifacts"
@@ -33,3 +33,75 @@ run = "turbo run clean"
 [tasks.dev]
 description = "Start development mode"
 run = "turbo run dev"
+
+# =============================================================================
+# Per-package tasks
+# =============================================================================
+
+[tasks."cleo:dev"]
+description = "Run cleo in dev mode"
+run = "bun run apps/cleo/src/cli.ts"
+
+[tasks."cleo:build"]
+description = "Build cleo"
+run = "turbo run build --filter=@bundt/cleo"
+
+[tasks."dxdocs:dev"]
+description = "Run dxdocs dev server"
+run = "cd apps/dxdocs && bun run src/cli.ts dev"
+
+[tasks."dxdocs:build"]
+description = "Build dxdocs"
+run = "turbo run build --filter=@bundt/dxdocs"
+
+[tasks."ollama:dev"]
+description = "Run ollama-bundt in dev mode"
+run = "bun run apps/ollama/src/cli.ts"
+
+[tasks."ollama:build"]
+description = "Build ollama"
+run = "turbo run build --filter=@bundt/ollama"
+
+[tasks."hateoas:build"]
+description = "Build hateoas"
+run = "turbo run build --filter=@bundt/hateoas"
+
+[tasks."hateoas:test"]
+description = "Run hateoas tests"
+run = "cd packages/hateoas && bun test"
+
+[tasks."waavy:build"]
+description = "Build waavy"
+run = "turbo run build --filter=@bundt/waavy"
+
+# =============================================================================
+# Docs
+# =============================================================================
+
+[tasks."docs:dev"]
+description = "Run documentation site dev server"
+run = "cd docs && bun run ../apps/dxdocs/src/cli.ts dev"
+
+[tasks."docs:build"]
+description = "Build documentation site"
+run = "cd docs && bun run ../apps/dxdocs/src/cli.ts build"
+
+# =============================================================================
+# Release
+# =============================================================================
+
+[tasks."bump"]
+description = "Bump package version"
+run = "bun scripts/bump.ts"
+
+[tasks."release"]
+description = "Release a package"
+run = "bun scripts/release.ts"
+
+# =============================================================================
+# Scaffolding
+# =============================================================================
+
+[tasks.new]
+description = "Create a new package"
+run = "bun scripts/create-package.ts"

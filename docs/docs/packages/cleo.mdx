@@ -1,0 +1,71 @@
+---
+title: Cleo
+---
+
+# Cleo
+
+Claude extensions orchestrator — manage, run, and share Claude Code agents and skills from the command line.
+
+## Install
+
+```sh
+bun add -g @bundt/cleo
+```
+
+Or run directly:
+
+```sh
+bunx @bundt/cleo --help
+```
+
+## Overview
+
+Cleo provides a CLI for managing Claude Code's agent and skill ecosystem. It handles MCP server configurations, agent discovery via a built-in registry, and structured task execution through Claude Code's headless API.
+
+## Commands
+
+### Agent Management
+
+```sh
+cleo list                    # List available agents (bundled, global, local)
+cleo info <agent>            # Show details for an agent
+cleo install <agents...>     # Install agents to .claude/agents/
+cleo uninstall <agents...>   # Remove agents and orphaned skills
+cleo validate [agents...]    # Validate agent structure and references
+```
+
+### Scaffolding
+
+```sh
+cleo init <name>                      # Scaffold a new agent markdown file
+cleo create-skill <name>              # Scaffold a new skill directory
+```
+
+### Task Execution
+
+```sh
+cleo run <task...>                    # Run a task through Claude Code (headless)
+cleo task <description...>            # Build context and run a task
+cleo task --template my-template      # Run from a saved template
+cleo task --save my-template <desc>   # Save a reusable template
+```
+
+### Registry
+
+```sh
+cleo search <query>           # Search for agents and skills
+cleo submit <type> <name>     # Submit an agent or skill to the registry
+```
+
+### Configuration
+
+```sh
+cleo config <key>             # Get a config value
+cleo config <key> <value>     # Set a config value
+cleo history [target]         # View operation history
+cleo rollback <target>        # Restore to a previous snapshot
+```
+
+## Interactive Mode
+
+Run `cleo tui` to launch the interactive terminal UI for managing multiple Claude Code sessions simultaneously.

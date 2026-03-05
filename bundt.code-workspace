@@ -1,0 +1,74 @@
+{
+  "folders": [
+    { "path": ".", "name": "bundt (root)" },
+    { "path": "apps/cleo", "name": "cleo" },
+    { "path": "apps/dxdocs", "name": "dxdocs" },
+    { "path": "apps/ollama", "name": "ollama" },
+    { "path": "packages/hateoas", "name": "hateoas" },
+    { "path": "packages/waavy", "name": "waavy" },
+    { "path": "packages/signals", "name": "signals" },
+    { "path": "internal/build-utils", "name": "internal/build-utils" },
+    { "path": "internal/node-shim", "name": "internal/node-shim" },
+    { "path": "internal/shared", "name": "internal/shared" }
+  ],
+  "settings": {
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/.turbo": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/.turbo": true,
+      "**/bun.lock": true
+    }
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "bun",
+        "request": "launch",
+        "name": "cleo dev",
+        "program": "${workspaceFolder}/apps/cleo/src/cli.ts",
+        "cwd": "${workspaceFolder}/apps/cleo"
+      },
+      {
+        "type": "bun",
+        "request": "launch",
+        "name": "dxdocs dev",
+        "program": "${workspaceFolder}/apps/dxdocs/src/cli.ts",
+        "args": ["dev"],
+        "cwd": "${workspaceFolder}/apps/dxdocs"
+      },
+      {
+        "type": "bun",
+        "request": "launch",
+        "name": "ollama dev",
+        "program": "${workspaceFolder}/apps/ollama/src/cli.ts",
+        "cwd": "${workspaceFolder}/apps/ollama"
+      },
+      {
+        "type": "bun",
+        "request": "launch",
+        "name": "hateoas example",
+        "program": "${workspaceFolder}/packages/hateoas/example/server.ts",
+        "cwd": "${workspaceFolder}/packages/hateoas"
+      }
+    ]
+  },
+  "extensions": {
+    "recommendations": [
+      "esbenp.prettier-vscode",
+      "dbaeumer.vscode-eslint",
+      "oven.bun-vscode",
+      "bradlc.vscode-tailwindcss",
+      "rust-lang.rust-analyzer"
+    ]
+  }
+}

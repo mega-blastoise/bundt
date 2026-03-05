@@ -1,0 +1,76 @@
+---
+title: Contributing
+---
+
+# Contributing
+
+## Development Setup
+
+```sh
+git clone https://github.com/bundt-dev/bundt.git
+cd bundt
+bun install
+bun run build
+```
+
+Ensure you have Bun 1.3+ installed. Use [mise](https://mise.jdx.dev) for tool version management — the repo includes a `mise.toml`.
+
+## Code Conventions
+
+### TypeScript
+
+- Strict mode with `noImplicitAny`, `noUncheckedIndexedAccess`, `noImplicitOverride`
+- Use `import type` for type-only imports (`verbatimModuleSyntax`)
+- No `any` — use `unknown` with type guards
+- No `enum` — use `as const` objects or union types
+- No default exports (config files excepted)
+- No `.js` extensions in TypeScript imports
+- Prefer `const` over `let`; never use `var`
+
+### Formatting
+
+- Prettier: 2 space indent, single quotes, trailing comma none, semicolons
+- ESLint 9 flat config with `simple-import-sort`
+- Import order: side effects, builtins, external, internal, parent, same-folder, types
+
+### CSS
+
+- Vanilla CSS only — no CSS-in-JS, no Sass
+- BEM naming with project-specific prefixes
+- CSS custom properties from design tokens
+
+## Package-Specific Commands
+
+### Build and Test a Single Package
+
+```sh
+turbo run build --filter=@bundt/cleo
+turbo run test --filter=@bundt/hateoas
+turbo run typecheck --filter=@bundt/waavy
+```
+
+### Run a Package in Dev Mode
+
+```sh
+cd apps/cleo && bun run dev
+cd apps/dxdocs && bun run dev
+cd packages/hateoas && bun run dev
+```
+
+## Pull Request Process
+
+1. Create a feature branch from `main`
+2. Make your changes following the conventions above
+3. Run `bun run typecheck` and `bun run test` to verify
+4. Write a concise PR description summarizing the change
+5. Request review
+
+Keep PRs focused — one feature or fix per PR. Large changes should be broken into reviewable increments.
+
+## Adding a New Package
+
+1. Create directory in `apps/` (CLI/server) or `packages/` (library)
+2. Add `package.json` with `"name": "@bundt/<name>"`, `"type": "module"`
+3. Add `tsconfig.json` extending `../../tsconfig.json`
+4. Add `build`, `typecheck`, `test`, `clean` scripts
+5. Run `bun install` from root to link workspaces

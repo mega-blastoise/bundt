@@ -1,0 +1,76 @@
+---
+title: Release Process
+---
+
+# Release Process
+
+Each Bundt package is versioned independently. All packages publish to npm under the `@bundt` scope.
+
+## Version Bumping
+
+Use the root bump script to update a package version:
+
+```sh
+bun run bump
+```
+
+This script handles:
+
+- Selecting the target package
+- Bumping the version in `package.json`
+- Updating any workspace dependency references
+
+## Git Tags
+
+Tags follow the format `@bundt/<name>@<version>`:
+
+```
+@bundt/cleo@0.1.0-alpha.0
+@bundt/dxdocs@0.1.0-alpha.1
+@bundt/waavy@0.2.0
+```
+
+## Publishing
+
+```sh
+bun run release
+```
+
+The release script:
+
+1. Runs pre-release checks (clean build, tests pass, no uncommitted changes)
+2. Builds the package
+3. Publishes to npm with public access
+4. Creates a git tag
+
+## Pre-release Versions
+
+For alpha/beta releases, use semver pre-release identifiers:
+
+```
+0.1.0-alpha.0    # First alpha
+0.1.0-alpha.1    # Second alpha
+0.1.0-beta.0     # First beta
+0.1.0-rc.0       # Release candidate
+0.1.0            # Stable release
+```
+
+## Package-Specific Notes
+
+### Cleo
+
+Cleo has dedicated release scripts in `apps/cleo/scripts/`:
+
+- `bump.sh` — version bump with changelog entry
+- `tag.sh` — create git tag
+- `prerelease-check.sh` — validate build and tests
+- `release-commit.sh` — create release commit
+
+### Build Artifacts
+
+CLI apps produce dual outputs:
+
+- `dist/<name>.bun.js` — Bun-native build (primary)
+- `dist/<name>.mjs` — Node.js compatible shim (fallback)
+
+Libraries produce compiled output in `out/` or use source-level exports depending on the package.

@@ -1,0 +1,38 @@
+---
+title: Introduction
+---
+
+# Bundt
+
+Bun Developer Toolkits — a monorepo of TypeScript and Rust developer tools built for the [Bun](https://bun.sh) runtime.
+
+Bundt provides a collection of focused, composable packages that share strict TypeScript conventions, minimal dependencies, and first-class Bun support.
+
+## Packages
+
+| Package | Description |
+|---------|-------------|
+| **[@bundt/cleo](/packages/cleo)** | Claude extensions orchestrator CLI — manage, run, and share Claude Code agents and skills |
+| **[@bundt/dxdocs](/packages/dxdocs)** | Zero-JS static documentation generator from Markdown/MDX |
+| **[@bundt/hateoas](/packages/hateoas)** | React HATEOAS framework with server, client, and protocol modules |
+| **[@bundt/waavy](/packages/waavy)** | React SSR framework for non-JavaScript server environments |
+| **[@bundt/loclaude](/packages/ollama)** | Local LLM management CLI with Ollama and Docker |
+
+## Quick Install
+
+Install any package from npm under the `@bundt` scope:
+
+```sh
+bun add @bundt/cleo
+bun add @bundt/hateoas
+bun add @bundt/waavy
+```
+
+Or clone the monorepo to develop locally:
+
+```sh
+git clone https://github.com/bundt-dev/bundt.git
+cd bundt
+bun install
+bun run build
+```

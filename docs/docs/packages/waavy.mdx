@@ -1,0 +1,79 @@
+---
+title: Waavy
+---
+
+# Waavy
+
+React SSR framework for non-JavaScript server environments. Render React applications server-side and ship hydrated bundles to the client.
+
+## Install
+
+```sh
+bun add @bundt/waavy
+```
+
+Requires `react` and `react-dom` as peer dependencies. Optional peer dependency on `@tanstack/react-query` for data dehydration.
+
+## Overview
+
+Waavy provides three capabilities:
+
+1. **Server rendering** — render React components to HTML streams using `renderToReadableStream`
+2. **Client bundling** — bundle client-side entry points with tree shaking and code splitting
+3. **CLI tooling** — build, serve, and develop SSR applications from the command line
+
+## CLI Usage
+
+```sh
+# Build the SSR application
+waavy build
+
+# Start the development server
+waavy dev
+
+# Serve the built application
+waavy serve
+```
+
+## Server Rendering
+
+```ts
+import { renderToStream } from '@bundt/waavy';
+
+const stream = await renderToStream(<App />, {
+  bootstrapScripts: ['/client.js']
+});
+```
+
+Waavy uses React 19's streaming server renderer. The HTML stream can be piped directly to any HTTP response, making it compatible with Bun, Node, or proxied through non-JS servers like Go, Rust, or Python.
+
+## Client Hydration
+
+```ts
+import { hydrateApp } from '@bundt/waavy/browser';
+
+hydrateApp(<App />, document.getElementById('root'));
+```
+
+The browser entry point handles React hydration with automatic error recovery and optional TanStack Query rehydration.
+
+## Data Loading
+
+When `@tanstack/react-query` is available, Waavy supports server-side data prefetching with automatic dehydration:
+
+```tsx
+const queryClient = new QueryClient();
+
+await queryClient.prefetchQuery({
+  queryKey: ['users'],
+  queryFn: fetchUsers
+});
+
+const stream = await renderToStream(
+  <QueryClientProvider client={queryClient}>
+    <App />
+  </QueryClientProvider>
+);
+```
+
+The dehydrated state is embedded in the HTML and rehydrated on the client automatically.

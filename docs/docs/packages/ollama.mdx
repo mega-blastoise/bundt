@@ -1,0 +1,77 @@
+---
+title: Ollama (loclaude)
+---
+
+# Ollama
+
+Local LLM management for Claude Code via Ollama. Run Claude Code with local models at zero API cost with complete privacy.
+
+Currently published as `@bundt/loclaude` (pending rebrand).
+
+## Install
+
+```sh
+bun add -g @bundt/loclaude
+```
+
+## Prerequisites
+
+- **Docker** and **Docker Compose** for running Ollama containers
+- **NVIDIA GPU** recommended (CPU-only mode available)
+
+## Commands
+
+### Initialize
+
+```sh
+loclaude init
+```
+
+Scaffolds a project with `docker-compose.yml`, Ollama configuration, and optional Open WebUI setup.
+
+Options:
+
+```sh
+loclaude init --force          # Overwrite existing files
+loclaude init --no-webui       # Skip Open WebUI
+loclaude init --gpu            # Force GPU mode (NVIDIA)
+loclaude init --no-gpu         # Force CPU-only mode
+loclaude init --local-models   # Per-project models directory
+```
+
+### Docker Management
+
+```sh
+loclaude docker-up             # Start Ollama and Open WebUI containers
+loclaude docker-down           # Stop containers
+loclaude docker-status         # Show container status
+loclaude docker-logs           # Show container logs
+loclaude docker-restart        # Restart containers
+```
+
+### Model Management
+
+```sh
+loclaude models                # List installed models
+loclaude models-pull <name>    # Pull a model from the Ollama registry
+loclaude models-rm <name>      # Remove an installed model
+loclaude models-show <name>    # Show model information
+loclaude models-run <name>     # Run a model interactively
+```
+
+### Run Claude with Local Model
+
+```sh
+loclaude run                   # Interactive model selection
+loclaude run -m qwen2.5:14b   # Specify model directly
+```
+
+This launches Claude Code configured to use the specified local Ollama model instead of Anthropic's API.
+
+### System Health
+
+```sh
+loclaude doctor                # Check system requirements
+loclaude config                # Show current configuration
+loclaude config-paths          # Show config file search paths
+```

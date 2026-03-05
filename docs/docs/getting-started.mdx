@@ -1,0 +1,62 @@
+---
+title: Getting Started
+---
+
+# Getting Started
+
+## Prerequisites
+
+- **Bun 1.3+** — primary runtime, package manager, bundler, and test runner
+- **Node 18+** — only needed for Node.js shim targets (optional)
+- **Docker** — only needed for `@bundt/loclaude` Ollama management (optional)
+
+## Clone and Build
+
+```sh
+git clone https://github.com/bundt-dev/bundt.git
+cd bundt
+bun install
+bun run build
+```
+
+`bun run build` invokes Turborepo, which builds all packages in dependency order with caching.
+
+## Common Commands
+
+```sh
+bun run build       # Build all packages (cached via Turborepo)
+bun run typecheck   # Type-check all packages
+bun run test        # Run all test suites
+bun run lint        # Lint all packages
+bun run clean       # Remove build artifacts
+bun run dev         # Start dev mode across packages
+```
+
+To scope a command to a single package:
+
+```sh
+turbo run build --filter=@bundt/cleo
+turbo run test --filter=@bundt/hateoas
+```
+
+## Workspace Structure
+
+```
+bundt/
+  apps/              Deployable CLIs and applications
+    cleo/            Claude extensions orchestrator
+    dxdocs/          Static docs generator
+    loclaude/        Local LLM management
+  packages/          Publishable npm libraries
+    hateoas/         React HATEOAS framework
+    waavy/           React SSR framework
+    signals/         Signal graph abstractions (planned)
+  internal/          Private shared packages (not published)
+    shared/          Cross-package types and utilities
+  crates/            Rust crates (Cargo workspace)
+  turbo.json         Task graph and caching config
+  package.json       Root workspace config
+  mise.toml          Tool version management
+```
+
+Apps in `apps/` are deployable CLIs published with `bin` entries. Packages in `packages/` are libraries consumed as dependencies. Internal packages are workspace-only and never published.
