@@ -8,10 +8,24 @@
   "engines": {
     "bun": ">=1.3"
   },
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "build": "echo 'TODO: implement'",
+    "prebuild": "rm -rf dist",
+    "build:bundle": "bun build/index.ts",
+    "build:types": "tsc -p tsconfig.build.json",
+    "build": "bun run build:bundle && bun run build:types",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@bundt/internal-build-utils": "workspace:*"
   }
 }
