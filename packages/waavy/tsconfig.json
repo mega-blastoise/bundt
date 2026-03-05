@@ -5,7 +5,6 @@
     "types": ["bun", "node"],
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "baseUrl": "./",
     "paths": {
       "@/*": ["./src/*"],
       "@pkg/config": ["./config/config.ts"],

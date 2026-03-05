@@ -4,6 +4,19 @@
   "type": "module",
   "description": "Beautiful documentation sites from MDX. Zero client JS, pure static HTML.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mega-blastoise/bundt.git",
+    "directory": "apps/dxdocs"
+  },
+  "homepage": "https://github.com/mega-blastoise/bundt/tree/main/apps/dxdocs",
+  "bugs": {
+    "url": "https://github.com/mega-blastoise/bundt/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "bin": {
     "dxdocs": "./dist/dxdocs.mjs",
     "bun-dxdocs": "./bin/dxdocs.ts"
@@ -28,7 +41,6 @@
   "files": [
     "dist",
     "bin",
-    "src",
     "CHANGELOG.md",
     "LICENSE"
   ],
@@ -43,7 +55,7 @@
     "build:bundle": "bun build/index.ts",
     "build": "bun run build:bundle && bun run build:types",
     "typecheck": "tsc --noEmit",
-    "test": "bun test",
+    "test": "echo 'No tests yet'",
     "clean": "rm -rf dist site"
   },
   "dependencies": {

@@ -4,6 +4,19 @@
   "type": "module",
   "description": "React SSR for non-JavaScript server environments.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mega-blastoise/bundt.git",
+    "directory": "packages/waavy"
+  },
+  "homepage": "https://github.com/mega-blastoise/bundt/tree/main/packages/waavy",
+  "bugs": {
+    "url": "https://github.com/mega-blastoise/bundt/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "bin": {
     "waavy": "./bin/waavy.js"
   },
