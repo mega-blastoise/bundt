@@ -1,11 +1,11 @@
 /**
- * Configuration system for loclaude
+ * Configuration system for ollama-bundt
  *
  * Priority (highest to lowest):
  * 1. CLI arguments
  * 2. Environment variables
- * 3. Project config (./.loclaude/config.json)
- * 4. User config (~/.config/loclaude/config.json)
+ * 3. Project config (./.ollama-bundt/config.json)
+ * 4. User config (~/.config/ollama-bundt/config.json)
  * 5. Default values
  */
 
@@ -60,7 +60,7 @@ const DEFAULT_CONFIG: LoclaudeConfig = {
     defaultModel: 'qwen3-coder:30b'
   },
   models: {
-    path: join(homedir(), '.loclaude', 'models')
+    path: join(homedir(), '.ollama-bundt', 'models')
   },
   docker: {
     composeFile: './docker-compose.yml',
@@ -82,11 +82,11 @@ function getConfigPaths(): string[] {
   const paths: string[] = [];
 
   // 1. Project-local config
-  const projectConfig = join(process.cwd(), '.loclaude', 'config.json');
+  const projectConfig = join(process.cwd(), '.ollama-bundt', 'config.json');
   paths.push(projectConfig);
 
   // 2. User global config
-  const userConfig = join(homedir(), '.config', 'loclaude', 'config.json');
+  const userConfig = join(homedir(), '.config', 'ollama-bundt', 'config.json');
   paths.push(userConfig);
 
   return paths;
@@ -158,19 +158,19 @@ function loadEnvConfig(): LoclaudeConfigPartial {
   }
 
   // Docker config from env
-  if (process.env.LOCLAUDE_COMPOSE_FILE) {
+  if (process.env.OLLAMA_BUNDT_COMPOSE_FILE) {
     config.docker = config.docker || {};
-    config.docker.composeFile = process.env.LOCLAUDE_COMPOSE_FILE;
+    config.docker.composeFile = process.env.OLLAMA_BUNDT_COMPOSE_FILE;
   }
-  if (process.env.LOCLAUDE_GPU !== undefined) {
+  if (process.env.OLLAMA_BUNDT_GPU !== undefined) {
     config.docker = config.docker || {};
-    config.docker.gpu = process.env.LOCLAUDE_GPU !== 'false' && process.env.LOCLAUDE_GPU !== '0';
+    config.docker.gpu = process.env.OLLAMA_BUNDT_GPU !== 'false' && process.env.OLLAMA_BUNDT_GPU !== '0';
   }
 
   // Models config from env
-  if (process.env.LOCLAUDE_MODELS_PATH) {
+  if (process.env.OLLAMA_BUNDT_MODELS_PATH) {
     config.models = config.models || {};
-    config.models.path = process.env.LOCLAUDE_MODELS_PATH;
+    config.models.path = process.env.OLLAMA_BUNDT_MODELS_PATH;
   }
 
   return config;

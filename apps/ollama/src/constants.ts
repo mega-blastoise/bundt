@@ -3,8 +3,8 @@
  *
  * Values come from (in priority order):
  * 1. Environment variables (OLLAMA_URL, OLLAMA_MODEL)
- * 2. Project config (.loclaude/config.json)
- * 3. User config (~/.config/loclaude/config.json)
+ * 2. Project config (.ollama-bundt/config.json)
+ * 3. User config (~/.config/ollama-bundt/config.json)
  * 4. Default values
  */
 

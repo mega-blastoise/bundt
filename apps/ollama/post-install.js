@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-if (process.env.LOCLAUDE_SKIP_POSTINSTALL === 'true') {
+if (process.env.OLLAMA_BUNDT_SKIP_POSTINSTALL === 'true') {
   process.exit(0);
 }
 
@@ -39,9 +39,10 @@ const c = colors;
 
 // ASCII Art Logo
 const logo = `
-${c.brightCyan}    ╦  ╔═╗╔═╗╦  ╔═╗╦ ╦╔╦╗╔═╗${c.reset}
-${c.cyan}    ║  ║ ║║  ║  ╠═╣║ ║ ║║║╣ ${c.reset}
-${c.brightBlue}    ╩═╝╚═╝╚═╝╩═╝╩ ╩╚═╝═╩╝╚═╝${c.reset}
+${c.brightCyan}    ╔═╗╦  ╦  ╔═╗╔╦╗╔═╗${c.reset}
+${c.cyan}    ║ ║║  ║  ╠═╣║║║╠═╣${c.reset}
+${c.brightBlue}    ╚═╝╩═╝╩═╝╩ ╩╩ ╩╩ ╩${c.reset}
+${c.dim}         @bundt/ollama${c.reset}
 `;
 
 const box = (content, title = '') => {
@@ -77,9 +78,9 @@ const installMessage = box([
   `${c.dim}Run local LLMs with Claude Code${c.reset}`,
   '',
   `${c.brightWhite}Quick Start:${c.reset}`,
-  `  ${c.cyan}$${c.reset} ${c.brightWhite}loclaude init${c.reset}      ${c.dim}# Set up project${c.reset}`,
-  `  ${c.cyan}$${c.reset} ${c.brightWhite}loclaude docker-up${c.reset} ${c.dim}# Start Ollama${c.reset}`,
-  `  ${c.cyan}$${c.reset} ${c.brightWhite}loclaude run${c.reset}       ${c.dim}# Launch Claude${c.reset}`,
+  `  ${c.cyan}$${c.reset} ${c.brightWhite}ollama-bundt init${c.reset}      ${c.dim}# Set up project${c.reset}`,
+  `  ${c.cyan}$${c.reset} ${c.brightWhite}ollama-bundt docker-up${c.reset} ${c.dim}# Start Ollama${c.reset}`,
+  `  ${c.cyan}$${c.reset} ${c.brightWhite}ollama-bundt run${c.reset}       ${c.dim}# Launch Claude${c.reset}`,
   '',
   `${c.brightWhite}Commands:${c.reset}`,
   `  ${c.yellow}doctor${c.reset}       ${c.dim}Check system requirements${c.reset}`,
@@ -88,8 +89,8 @@ const installMessage = box([
   `  ${c.yellow}config${c.reset}       ${c.dim}Show configuration${c.reset}`,
   '',
   '',
-  `${c.dim}Docs: ${c.brightBlue}https://www.npmjs.com/package/loclaude${c.reset}`,
-].join('\n'), `${llama_emoji} loclaude`);
+  `${c.dim}Docs: ${c.brightBlue}https://www.npmjs.com/package/@bundt/ollama${c.reset}`,
+].join('\n'), `${llama_emoji} @bundt/ollama`);
 
 console.log(installMessage);
 console.log();

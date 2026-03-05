@@ -1,7 +1,7 @@
 /**
  * CLI Output Utilities
  *
- * Provides colorful, themed output for the loclaude CLI.
+ * Provides colorful, themed output for the ollama-bundt CLI.
  * Uses picocolors for terminal colors.
  *
  * Color Palette:
@@ -125,12 +125,12 @@ export function hint(text: string): void {
 }
 
 /**
- * Print the loclaude banner
+ * Print the ollama-bundt banner
  */
 export function banner(): void {
   console.log('');
   console.log(
-    `  ${pc.cyan(pc.bold('loclaude'))} ${pc.dim('─')} ${pc.dim('Run Claude Code with local Ollama')}`
+    `  ${pc.cyan(pc.bold('ollama-bundt'))} ${pc.dim('─')} ${pc.dim('Run Claude Code with local Ollama')}`
   );
   console.log('');
 }

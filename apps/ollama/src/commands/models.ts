@@ -90,8 +90,8 @@ export async function modelsList(): Promise<void> {
       console.log('');
       console.log(info('No models installed.'));
       console.log('');
-      console.log(`Pull a model with: ${cmd('loclaude models-pull <model-name>')}`);
-      console.log(`Example: ${cmd('loclaude models-pull llama3.2')}`);
+      console.log(`Pull a model with: ${cmd('ollama-bundt models-pull <model-name>')}`);
+      console.log(`Example: ${cmd('ollama-bundt models-pull llama3.2')}`);
       return;
     }
 
@@ -119,7 +119,7 @@ export async function modelsList(): Promise<void> {
   } catch (err) {
     const ollamaUrl = getOllamaUrl();
     console.log(error(`Could not connect to Ollama at ${ollamaUrl}`));
-    console.log(dim(`  Make sure Ollama is running: ${cmd('loclaude docker-up')}`));
+    console.log(dim(`  Make sure Ollama is running: ${cmd('ollama-bundt docker-up')}`));
     process.exit(1);
   }
 }
@@ -127,8 +127,8 @@ export async function modelsList(): Promise<void> {
 export async function modelsPull(modelName: string): Promise<void> {
   if (!modelName) {
     console.log(error('Model name required'));
-    console.log(dim(`Usage: ${cmd('loclaude models-pull <model-name>')}`));
-    console.log(dim(`Example: ${cmd('loclaude models-pull llama3.2')}`));
+    console.log(dim(`Usage: ${cmd('ollama-bundt models-pull <model-name>')}`));
+    console.log(dim(`Example: ${cmd('ollama-bundt models-pull llama3.2')}`));
     process.exit(1);
   }
 
@@ -147,7 +147,7 @@ export async function modelsPull(modelName: string): Promise<void> {
 export async function modelsRm(modelName: string): Promise<void> {
   if (!modelName) {
     console.log(error('Model name required'));
-    console.log(dim(`Usage: ${cmd('loclaude models-rm <model-name>')}`));
+    console.log(dim(`Usage: ${cmd('ollama-bundt models-rm <model-name>')}`));
     process.exit(1);
   }
 
@@ -166,7 +166,7 @@ export async function modelsRm(modelName: string): Promise<void> {
 export async function modelsShow(modelName: string): Promise<void> {
   if (!modelName) {
     console.log(error('Model name required'));
-    console.log(dim(`Usage: ${cmd('loclaude models-show <model-name>')}`));
+    console.log(dim(`Usage: ${cmd('ollama-bundt models-show <model-name>')}`));
     process.exit(1);
   }
 
@@ -179,7 +179,7 @@ export async function modelsShow(modelName: string): Promise<void> {
 export async function modelsRun(modelName: string): Promise<void> {
   if (!modelName) {
     console.log(error('Model name required'));
-    console.log(dim(`Usage: ${cmd('loclaude models-run <model-name>')}`));
+    console.log(dim(`Usage: ${cmd('ollama-bundt models-run <model-name>')}`));
     process.exit(1);
   }
 

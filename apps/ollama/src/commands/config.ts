@@ -74,6 +74,6 @@ export async function configPaths(): Promise<void> {
 
   if (!activePath) {
     console.log(info('No config file found. Using defaults.'));
-    console.log(dim(`  Run ${cmd('loclaude init')} to create a project config.`));
+    console.log(dim(`  Run ${cmd('ollama-bundt init')} to create a project config.`));
   }
 }

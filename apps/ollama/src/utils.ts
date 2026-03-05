@@ -126,13 +126,13 @@ export async function selectModelInteractively(): Promise<string> {
     models = await fetchOllamaModels();
   } catch (error) {
     console.log(warn(`Could not connect to Ollama at ${ollamaUrl}`));
-    console.log(dim('  Make sure Ollama is running: loclaude docker-up'));
+    console.log(dim('  Make sure Ollama is running: ollama-bundt docker-up'));
     process.exit(1);
   }
 
   if (models.length === 0) {
     console.log(warn('No models found in Ollama.'));
-    console.log(dim('  Pull a model first: loclaude models-pull <model-name>'));
+    console.log(dim('  Pull a model first: ollama-bundt models-pull <model-name>'));
     process.exit(1);
   }
 

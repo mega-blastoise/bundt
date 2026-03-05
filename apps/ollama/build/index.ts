@@ -12,5 +12,5 @@ await Bun.$`mkdir -p ${distDir}`;
 await concurrent_build(
   bun_config as Bun.BuildConfig,
   node_config as Bun.BuildConfig,
-  createNodeShimConfig('loclaude') as Bun.BuildConfig,
+  createNodeShimConfig('ollama') as Bun.BuildConfig,
 );

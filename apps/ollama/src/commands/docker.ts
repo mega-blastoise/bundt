@@ -75,7 +75,7 @@ async function runCompose(args: string[], options: DockerOptions = {}): Promise<
 
   if (!composeFile) {
     console.log(error('No docker-compose.yml found'));
-    console.log(dim(`  Run ${cmd('loclaude init')} to create one, or specify --file`));
+    console.log(dim(`  Run ${cmd('ollama-bundt init')} to create one, or specify --file`));
     return 1;
   }
 

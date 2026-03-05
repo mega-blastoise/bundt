@@ -19,7 +19,7 @@ import {
 } from './commands';
 
 // CLI setup
-const cli = cac('loclaude');
+const cli = cac('ollama-bundt');
 
 // =============================================================================
 // run command: Run Claude with Ollama (default when no command specified)
@@ -51,7 +51,7 @@ cli
 // =============================================================================
 
 cli
-  .command('init', 'Initialize a new loclaude project')
+  .command('init', 'Initialize a new ollama-bundt project')
   .option('--force', 'Overwrite existing files')
   .option('--no-webui', 'Skip Open WebUI in docker-compose')
   .option('--gpu', 'Force GPU mode (NVIDIA)')
@@ -158,7 +158,7 @@ export const help = () => cli.outputHelp();
 export const version = () => cli.outputVersion();
 
 export const run_cli = (): void => {
-      // Show help if no command provided (just "loclaude" with no args)
+      // Show help if no command provided (just "ollama-bundt" with no args)
     const args = process.argv.slice(2);
     if (args.length === 0) {
       help();

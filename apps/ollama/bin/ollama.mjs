@@ -7,6 +7,6 @@ import { dirname, resolve } from 'node:path';
 const distDir = dirname(fileURLToPath(import.meta.url));
 
 runWithBun({
-  name: 'loclaude',
-  tsEntry: resolve(distDir, '../bin/loclaude.ts')
+  name: 'ollama-bundt',
+  tsEntry: resolve(distDir, '../bin/ollama.ts')
 });

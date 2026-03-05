@@ -159,14 +159,14 @@ async function checkOllamaConnection(): Promise<CheckResult> {
       name: 'Ollama API',
       status: 'warning',
       message: `HTTP ${response.status}`,
-      hint: 'Ollama may not be running. Try: loclaude docker-up'
+      hint: 'Ollama may not be running. Try: ollama-bundt docker-up'
     };
   } catch (error) {
     return {
       name: 'Ollama API',
       status: 'warning',
       message: 'Not reachable',
-      hint: `Cannot connect to ${ollamaUrl}. Start Ollama: loclaude docker-up`
+      hint: `Cannot connect to ${ollamaUrl}. Start Ollama: ollama-bundt docker-up`
     };
   }
 }
@@ -213,7 +213,7 @@ async function checkOllamaVersion(): Promise<CheckResult> {
         name: 'Ollama Version',
         status: 'warning',
         message: 'Could not determine version',
-        hint: 'Ollama may not be running. Try: loclaude docker-up'
+        hint: 'Ollama may not be running. Try: ollama-bundt docker-up'
       };
     }
 
@@ -260,7 +260,7 @@ async function checkOllamaVersion(): Promise<CheckResult> {
       name: 'Ollama Version',
       status: 'warning',
       message: 'Could not check version',
-      hint: `Cannot connect to ${ollamaUrl}. Start Ollama: loclaude docker-up`
+      hint: `Cannot connect to ${ollamaUrl}. Start Ollama: ollama-bundt docker-up`
     };
   }
 }
@@ -302,9 +302,9 @@ export async function doctor(): Promise<void> {
     console.log(red(`${errors.length} error(s) found.`) + ' Fix these before proceeding.');
     process.exit(1);
   } else if (warnings.length > 0) {
-    console.log(yellow(`${warnings.length} warning(s).`) + ' loclaude may work with limited functionality.');
+    console.log(yellow(`${warnings.length} warning(s).`) + ' ollama-bundt may work with limited functionality.');
   } else {
-    console.log(green('All checks passed!') + ' Ready to use loclaude.');
+    console.log(green('All checks passed!') + ' Ready to use ollama-bundt.');
   }
 }
 
