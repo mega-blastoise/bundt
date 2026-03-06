@@ -2,27 +2,30 @@
 
 Agent-native dynamic UI framework. Server-composed, streaming React SSR with fragment-based micro-frontends.
 
+> **Status:** Pre-release (0.1.0). Core composition engine, streaming SSR, WebSocket interactions, session persistence, client runtime, and build tooling are implemented and tested (89 tests, 184 assertions across 13 test files). API surface may change before 1.0.
+
 ## What is prev?
 
 `prev` is a React SSR framework where the **server composes the UI** from registered building blocks called **Fragments**. Instead of static page routes, an AI agent (or any orchestrator) sends a structured composition request describing which fragments to show, how to lay them out, and how to wire data between them. The server assembles a **Frame**, streams it to the browser, and handles ongoing interactions via WebSocket.
 
 The name is a direct response to "Next" — `prev` is built for the AI-native web, where the UI itself is a response.
 
-### Core Concepts
-
-| Concept | Description |
-|---------|-------------|
-| **Fragment** | A self-contained UI component with typed props, data requirements, and interaction declarations |
-| **Data Source** | A server-side data fetcher with typed params and returns, optionally cacheable |
-| **Frame** | A composed workspace — a set of fragment instances with layout, data bindings, and interaction wiring |
-| **Session** | Persistent state across compositions — tracks frame history with back/forward navigation |
-| **Binding** | A wire connecting one fragment's interaction output to another fragment's prop or data param |
-
-## Installation
+## Install
 
 ```sh
 bun add @bundt/prev react react-dom zod
 ```
+
+## Core Concepts
+
+| Concept | Description |
+|---------|-------------|
+| **Fragment** | A self-contained UI component with typed props, data requirements, interaction declarations, and layout hints |
+| **Data Source** | A server-side data fetcher with typed params and returns, optional TTL caching |
+| **Frame** | A composed workspace — a set of fragment instances with layout positions, data bindings, and interaction wiring |
+| **Session** | Persistent state across compositions — tracks frame history with back/forward navigation |
+| **Binding** | A wire connecting one fragment's interaction output to another fragment's prop or data param, with optional path transforms |
+| **Mutation** | Runtime modifications to a live frame — add, remove, replace, resize fragments, or bind/unbind interactions |
 
 ## Quick Start
 
@@ -37,7 +40,6 @@ const usersSource = defineDataSource({
   params: z.object({ limit: z.number().optional() }),
   returns: z.array(z.object({ id: z.string(), name: z.string(), email: z.string() })),
   fetch: async (params) => {
-    // Replace with your actual data fetching
     return Array.from({ length: params.limit ?? 10 }, (_, i) => ({
       id: `${i + 1}`,
       name: `User ${i + 1}`,
@@ -52,23 +54,17 @@ const userList = defineFragment({
   name: 'User List',
   tags: ['users'],
   props: z.object({ title: z.string().optional() }),
-  data: {
-    users: { source: 'users' }
-  },
+  data: { users: { source: 'users' } },
   interactions: {
     selectUser: { payload: z.object({ userId: z.string() }) }
   },
   render: ({ props, data }) => (
-    <div style={{ padding: '16px' }}>
+    <div>
       <h2>{props.title ?? 'Users'}</h2>
       <ul>
         {Array.isArray(data.users) && data.users.map((user: any) => (
-          <li
-            key={user.id}
-            data-prev-interaction="selectUser"
-            data-prev-payload={JSON.stringify({ userId: user.id })}
-            style={{ cursor: 'pointer', padding: '8px 0' }}
-          >
+          <li key={user.id} data-prev-interaction="selectUser"
+              data-prev-payload={JSON.stringify({ userId: user.id })}>
             {user.name} — {user.email}
           </li>
         ))}
@@ -84,12 +80,11 @@ const userDetail = defineFragment({
   data: {},
   interactions: {},
   render: ({ props }) => (
-    <div style={{ padding: '16px' }}>
+    <div>
       <h2>User Detail</h2>
       {props.selectedUserId
         ? <p>Selected user: {props.selectedUserId}</p>
-        : <p style={{ opacity: 0.5 }}>Select a user from the list</p>
-      }
+        : <p style={{ opacity: 0.5 }}>Select a user from the list</p>}
     </div>
   )
 });
@@ -99,13 +94,13 @@ const server = createPrevServer({
   port: 3000,
   fragments: [userList, userDetail],
   dataSources: [usersSource],
-  dbPath: './prev.db'  // or ':memory:' for ephemeral sessions
+  dbPath: './prev.db'
 });
 
 server.listen();
 ```
 
-Then compose a UI by sending a POST request:
+Compose a UI:
 
 ```sh
 curl -X POST http://localhost:3000/prev/compose \
@@ -118,75 +113,69 @@ curl -X POST http://localhost:3000/prev/compose \
         "props": { "title": "Team Members" },
         "data": { "users": { "source": "users", "params": { "limit": 5 } } }
       },
-      {
-        "fragmentId": "user-detail"
-      }
+      { "fragmentId": "user-detail" }
     ],
-    "bindings": [
-      {
-        "id": "list-to-detail",
-        "sourceFragmentInstanceId": "<from response>",
-        "sourceInteraction": "selectUser",
-        "targetFragmentInstanceId": "<from response>",
-        "targetType": "prop",
-        "targetKey": "selectedUserId",
-        "transform": "userId"
-      }
-    ],
+    "bindings": [{
+      "id": "list-to-detail",
+      "sourceFragmentInstanceId": "<from-compose-response>",
+      "sourceInteraction": "selectUser",
+      "targetFragmentInstanceId": "<from-compose-response>",
+      "targetType": "prop",
+      "targetKey": "selectedUserId",
+      "transform": "userId"
+    }],
     "layout": "split-horizontal"
   }'
 ```
-
-The response is a streaming HTML document with the composed workspace.
 
 ## API Reference
 
 ### `defineFragment(definition)`
 
-Creates a typed fragment definition.
+Creates a typed, frozen fragment definition.
 
-```tsx
+```typescript
 defineFragment({
-  id: string;              // Unique identifier
-  name: string;            // Human-readable name
-  description?: string;    // What this fragment does
-  tags?: string[];         // For filtering/discovery
-  props: ZodType;          // Zod schema for component props
-  data: Record<string, {   // Data field declarations
-    source: string;        //   Data source ID
-    params?: ZodType;      //   Optional params schema
+  id: string;                    // Unique identifier (required)
+  name: string;                  // Human-readable name (required)
+  description?: string;          // What this fragment does
+  tags?: string[];               // For filtering/discovery
+  props: ZodType;                // Zod schema for component props
+  data: Record<string, {         // Data field declarations
+    source: string;              //   Data source ID to bind
+    params?: ZodType;            //   Optional params schema
   }>;
-  interactions: Record<string, {  // Interaction declarations
-    payload: ZodType;             //   Payload schema
+  interactions: Record<string, { // Interaction event declarations
+    payload: ZodType;            //   Payload schema
   }>;
-  layoutHints?: {
+  layoutHints?: {                // Layout solver hints
     minWidth?: string;
     minHeight?: string;
     resizable?: boolean;
     preferredAspectRatio?: number;
   };
-  render: (ctx: {
+  render: (ctx: {               // SSR render function (required)
     props: TProps;
     data: Record<string, unknown>;
-    emit: (interaction: string, payload: unknown) => void;
+    emit: EmitFn;
   }) => ReactNode;
 })
 ```
 
 ### `defineDataSource(definition)`
 
-Creates a typed data source definition.
+Creates a typed, frozen data source definition.
 
-```tsx
+```typescript
 defineDataSource({
-  id: string;                    // Unique identifier
-  name: string;                  // Human-readable name
+  id: string;                      // Unique identifier (required)
+  name: string;                    // Human-readable name (required)
   description?: string;
   tags?: string[];
-  params: ZodType;               // Zod schema for input params
-  returns: ZodType;              // Zod schema for return type
-  ttl?: number;                  // Cache TTL in milliseconds
-  fetch: (params: TParams) => Promise<TReturns>;
+  params: ZodType;                 // Zod schema for input params
+  returns: ZodType;                // Zod schema for return type
+  ttl?: number;                    // Cache TTL in milliseconds
+  fetch: (params: TParams) => Promise<TReturns>;  // (required)
 })
 ```
 
@@ -194,11 +183,11 @@ defineDataSource({
 
 Creates and returns a server instance.
 
-```tsx
+```typescript
 createPrevServer({
-  port?: number;           // Default: 3000
-  hostname?: string;       // Default: 'localhost'
-  dbPath?: string;         // SQLite path. Default: ':memory:'
+  port?: number;                   // Default: 3000
+  hostname?: string;               // Default: 'localhost'
+  dbPath?: string;                 // SQLite path. ':memory:' for ephemeral
   fragments: FragmentDefinition[];
   dataSources: DataSourceDefinition[];
 })
@@ -215,9 +204,9 @@ createPrevServer({
 | `/prev/frame/:id/glue.js` | GET | Per-frame client glue bundle |
 | `/prev/client.js` | GET | Client runtime bundle |
 | `/prev/ws` | WS | WebSocket for interactions + partial updates |
-| `/prev/api/session?sessionId=` | GET | Debug: session state |
+| `/prev/api/session?sessionId=` | GET | Session state (debug) |
 
-### Structured Composition Request
+### Composition Request
 
 ```typescript
 {
@@ -225,11 +214,11 @@ createPrevServer({
     fragmentId: string;               // Registered fragment ID
     props?: Record<string, unknown>;  // Initial props
     data?: Record<string, {           // Data source bindings
-      source: string;                 //   Data source ID
-      params: Record<string, unknown>; //  Fetch params
+      source: string;
+      params: Record<string, unknown>;
     }>;
     position?: { row, col, rowSpan, colSpan };  // Explicit grid position
-    size?: { width, height, ... };
+    size?: { width, height };
   }>;
   bindings?: Array<{
     id: string;
@@ -238,10 +227,10 @@ createPrevServer({
     targetFragmentInstanceId: string;
     targetType: 'prop' | 'dataParam';
     targetKey: string;
-    transform?: string;  // Dot-path into interaction payload
+    transform?: string;               // Dot-path into interaction payload
   }>;
-  layout?: 'single' | 'split-horizontal' | 'split-vertical' | 'grid' | 'primary-detail' | 'dashboard';
-  intent?: string;  // Human-readable description of what this workspace is for
+  layout?: LayoutType;
+  intent?: string;                     // Human-readable workspace description
 }
 ```
 
@@ -252,16 +241,27 @@ createPrevServer({
 | `single` | One fragment, full viewport | 1 fragment |
 | `split-horizontal` | Side by side, equal width | 2 fragments |
 | `split-vertical` | Stacked, equal height | — |
-| `grid` | Auto-grid (√n columns) | — |
+| `grid` | Auto-grid (sqrt(n) columns) | — |
 | `primary-detail` | 2/3 + 1/3 split | 3 fragments |
 | `dashboard` | 3-column grid | 4+ fragments |
 
+### Frame Mutations
+
+Mutate a live frame without full recomposition:
+
+```typescript
+{
+  type: 'add' | 'remove' | 'replace' | 'resize' | 'bind' | 'unbind';
+  // Fields vary by type — see FrameMutation type
+}
+```
+
 ## Fragment Interactions
 
-Fragments declare interactions and emit them either programmatically (via the `emit` function) or declaratively via data attributes:
+Fragments declare interactions and emit them either declaratively (SSR-safe) or programmatically:
 
 ```tsx
-// Declarative: add data attributes to clickable elements
+// Declarative: data attributes (works during SSR + client)
 <button
   data-prev-interaction="selectItem"
   data-prev-payload={JSON.stringify({ itemId: '123' })}
@@ -269,7 +269,7 @@ Fragments declare interactions and emit them either programmatically (via the `e
   Select
 </button>
 
-// Programmatic: use the emit function in render context
+// Programmatic: emit function (client-only, no-op during SSR)
 render: ({ emit }) => (
   <button onClick={() => emit('selectItem', { itemId: '123' })}>
     Select
@@ -277,23 +277,21 @@ render: ({ emit }) => (
 )
 ```
 
-> **Note:** During SSR, `emit` is a no-op. The declarative `data-prev-*` approach works for both SSR and client-side interactions via event delegation.
+The client runtime uses event delegation on `[data-prev-interaction]` elements — no per-element event listeners.
 
 ## Data Flow
 
 ```
 Composition Request
   → Fragment instances created with assigned IDs
-  → Layout solver assigns grid positions
-  → Data binder builds fetch plan
-  → Independent fetches run in parallel
-  → Dependent fetches run after dependencies resolve
+  → Layout solver assigns CSS Grid positions
+  → Data binder builds fetch plan (parallel where independent, sequential for deps)
   → Binding resolver validates interaction → prop/data wiring
   → Frame assembled and persisted to SQLite
-  → React SSR streams the workspace to the browser
-  → Client glue bundle connects WebSocket
+  → React SSR streams HTML to browser via renderToReadableStream
+  → Client runtime connects WebSocket
 
-User clicks interaction
+User Interaction
   → Event delegation captures click on [data-prev-interaction]
   → WebSocket sends interaction event to server
   → Server finds affected bindings
@@ -305,52 +303,66 @@ User clicks interaction
 
 ## Session Persistence
 
-Sessions and frames are persisted to SQLite (via `bun:sqlite`). This means:
+Sessions and frames are persisted to SQLite via `bun:sqlite`:
 
-- Restarting the server preserves session state
-- Refreshing the browser restores the current frame
+- Server restarts preserve all session state
+- Browser refreshes restore the current frame
 - Frame history supports back/forward navigation
+- Set `dbPath` to a file path for persistence, or `':memory:'` for ephemeral sessions
 
-Set `dbPath` to a file path for persistence, or `':memory:'` for ephemeral sessions.
+## Client Runtime
+
+The `@bundt/prev/client` export provides the browser runtime:
+
+- **WebSocket connection** — Auto-connects to `/prev/ws` for real-time updates
+- **Event delegation** — Captures interactions on `[data-prev-interaction]` elements
+- **DOM patching** — Applies partial HTML updates from server re-renders
+- **React hydration** — Hydrates server-rendered HTML for client interactivity
+- **CSS Grid layout** — Client-side layout management
+
+## Build Tooling
+
+The `@bundt/prev/build` export provides build-time utilities:
+
+- **Composition bundler** — Generates per-frame client glue bundles that wire up specific fragment instances
 
 ## Architecture
 
 ```
 packages/prev/
   src/
-    index.ts                    # Public API
-    types.ts                    # All type definitions
+    index.ts                    Public API (defineFragment, defineDataSource, createPrevServer)
+    types.ts                    All type definitions (50+ exported types)
 
-    registry/                   # Fragment + data source registries
-      fragment-registry.ts
-      data-source-registry.ts
+    registry/                   Fragment + data source registries
+      fragment-registry.ts      Register/lookup/list/filter fragments
+      data-source-registry.ts   Register/lookup data sources
 
-    composition/                # Composition engine
-      engine.ts                 #   Orchestrator
-      layout-solver.ts          #   CSS Grid layout algorithms
-      data-binder.ts            #   Data fetch planning + execution
-      binding-resolver.ts       #   Inter-fragment wiring validation
+    composition/                Composition engine
+      engine.ts                 Orchestrator (coordinate layout, data, bindings)
+      layout-solver.ts          CSS Grid layout algorithms (6 layout types)
+      data-binder.ts            Data fetch planning + parallel execution
+      binding-resolver.ts       Inter-fragment wiring validation
+      mutation.ts               Runtime frame mutations (add/remove/replace/resize/bind/unbind)
 
-    server/                     # HTTP + WebSocket server
-      server.ts                 #   Bun.serve() with all routes
-      ssr.tsx                   #   Streaming React SSR
-      websocket.tsx             #   Interaction handling + partial re-renders
-      session.ts                #   Session lifecycle management
-      database.ts               #   SQLite schema + query helpers
+    server/                     HTTP + WebSocket server
+      server.ts                 Bun.serve() with all routes
+      ssr.tsx                   Streaming React SSR (renderToReadableStream)
+      websocket.tsx             Interaction handling + partial re-renders
+      session.ts                Session lifecycle management
+      database.ts               SQLite schema + query helpers
 
-    client/                     # Browser runtime
-      runtime.ts                #   WebSocket + event delegation
-      hydration.ts              #   React hydration
-      bindings.ts               #   Client-side binding evaluation
-      layout.ts                 #   CSS Grid layout manager
+    client/                     Browser runtime
+      runtime.ts                WebSocket + event delegation
+      hydration.ts              React hydration
+      bindings.ts               Client-side binding evaluation
+      layout.ts                 CSS Grid layout manager
 
-    build/                      # Build tooling
-      composition-bundler.ts    #   Per-frame glue bundle generation
+    build/                      Build tooling
+      composition-bundler.ts    Per-frame glue bundle generation
 ```
 
 ## Roadmap
-
-This is **Phase 1 (Foundation)**. Future phases include:
 
 - **Phase 2:** MCP tool integration — expose fragment/data source registries as MCP tools for AI agent discovery
 - **Phase 3:** Agent chat panel — embedded conversational UI for natural language composition

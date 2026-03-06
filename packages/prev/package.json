@@ -1,12 +1,12 @@
 {
   "name": "@bundt/prev",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0",
   "type": "module",
   "description": "Agent-native dynamic UI framework. Server-composed, streaming React SSR with fragment-based micro-frontends.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mega-blastoise/bundt.git",
+    "url": "git+https://github.com/mega-blastoise/bundt.git",
     "directory": "packages/prev"
   },
   "homepage": "https://github.com/mega-blastoise/bundt/tree/main/packages/prev",
@@ -16,9 +16,18 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/",
-    "tag": "alpha"
+    "tag": "latest"
   },
-  "keywords": ["react", "ssr", "streaming", "agent", "ai", "fragments", "dynamic-ui", "bun"],
+  "keywords": [
+    "react",
+    "ssr",
+    "streaming",
+    "agent",
+    "ai",
+    "fragments",
+    "dynamic-ui",
+    "bun"
+  ],
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -39,7 +48,11 @@
       "default": "./dist/build.js"
     }
   },
-  "files": ["dist", "src", "LICENSE"],
+  "files": [
+    "dist",
+    "src",
+    "LICENSE"
+  ],
   "engines": {
     "bun": ">=1.3"
   },

@@ -1,12 +1,12 @@
 {
   "name": "@bundt/cleo",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0",
   "type": "module",
   "description": "Claude extensions orchestrator. Manage, run, and share Claude Code agents and skills.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mega-blastoise/bundt.git",
+    "url": "git+https://github.com/mega-blastoise/bundt.git",
     "directory": "apps/cleo"
   },
   "homepage": "https://github.com/mega-blastoise/bundt/tree/main/apps/cleo",
@@ -14,8 +14,8 @@
     "url": "https://github.com/mega-blastoise/bundt/issues"
   },
   "bin": {
-    "cleo": "./dist/cleo.mjs",
-    "bun-cleo": "./bin/cleo.ts"
+    "cleo": "dist/cleo.mjs",
+    "bun-cleo": "bin/cleo.ts"
   },
   "keywords": [
     "claude",
@@ -46,7 +46,7 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/",
-    "tag": "alpha"
+    "tag": "latest"
   },
   "engines": {
     "bun": ">=1.3"
@@ -62,7 +62,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@bit-context-protocol/driver": "^0.1.0-alpha.0",
+    "@bit-context-protocol/driver": "^0.1.0",
     "@inquirer/prompts": "^8.3.0",
     "cac": "^6.7.0",
     "front-matter": "^4.0.2",
