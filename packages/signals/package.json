@@ -1,13 +1,24 @@
 {
   "name": "@bundt/signals",
-  "version": "0.0.1",
+  "version": "0.1.0-alpha.0",
   "type": "module",
-  "private": true,
-  "description": "Signal graph abstractions.",
+  "description": "Reactive signal graph abstractions — signals, computed values, and effects.",
   "license": "MIT",
-  "engines": {
-    "bun": ">=1.3"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mega-blastoise/bundt.git",
+    "directory": "packages/signals"
   },
+  "homepage": "https://github.com/mega-blastoise/bundt/tree/main/packages/signals",
+  "bugs": {
+    "url": "https://github.com/mega-blastoise/bundt/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/",
+    "tag": "alpha"
+  },
+  "keywords": ["signals", "reactive", "computed", "effects", "state", "bun"],
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -15,6 +26,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
+  },
+  "files": ["dist", "src", "LICENSE"],
+  "engines": {
+    "bun": ">=1.3"
   },
   "scripts": {
     "prebuild": "rm -rf dist",
@@ -26,6 +41,8 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "@bundt/internal-build-utils": "workspace:*"
+    "@bundt/internal-build-utils": "workspace:*",
+    "@types/bun": "latest",
+    "typescript": "^5.9.0"
   }
 }
