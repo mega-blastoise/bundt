@@ -131,6 +131,28 @@
         "react-dom": "^19.1.0",
       },
     },
+    "packages/prev": {
+      "name": "@bundt/prev",
+      "version": "0.1.0",
+      "dependencies": {
+        "picocolors": "^1.1.1",
+      },
+      "devDependencies": {
+        "@bundt/internal-build-utils": "workspace:*",
+        "@types/bun": "latest",
+        "@types/react": "^19.1.0",
+        "@types/react-dom": "^19.1.0",
+        "react": "^19.1.0",
+        "react-dom": "^19.1.0",
+        "typescript": "^5.9.0",
+        "zod": "^4.0.0",
+      },
+      "peerDependencies": {
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "zod": "^4.0.0",
+      },
+    },
     "packages/signals": {
       "name": "@bundt/signals",
       "version": "0.0.1",
@@ -188,6 +210,8 @@
     "@bundt/internal-shared": ["@bundt/internal-shared@workspace:internal/shared"],
 
     "@bundt/ollama": ["@bundt/ollama@workspace:apps/ollama"],
+
+    "@bundt/prev": ["@bundt/prev@workspace:packages/prev"],
 
     "@bundt/signals": ["@bundt/signals@workspace:packages/signals"],
 

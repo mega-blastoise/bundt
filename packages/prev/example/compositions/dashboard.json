@@ -1,0 +1,25 @@
+{
+  "intent": "Show e-commerce dashboard with metrics, product list, and product detail",
+  "layout": "primary-detail",
+  "fragments": [
+    {
+      "fragmentId": "product-list",
+      "props": { "title": "All Products" },
+      "data": {
+        "products": { "source": "products", "params": {} }
+      }
+    },
+    {
+      "fragmentId": "product-detail",
+      "data": {
+        "detail": { "source": "product-detail", "params": { "productId": "1" } }
+      }
+    },
+    {
+      "fragmentId": "metrics-panel",
+      "data": {
+        "metrics": { "source": "metrics", "params": {} }
+      }
+    }
+  ]
+}

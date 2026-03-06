@@ -28,7 +28,7 @@ internal/      Private shared packages (not published to npm)
 |----------|-----|-------------|
 | `apps/cleo` | `@bundt/cleo` | Claude extensions orchestrator CLI — manages MCP server configs |
 | `apps/dxdocs` | `@bundt/dxdocs` | Zero-JS static docs generator from Markdown/MDX |
-| `apps/loclaude` | TBD (rebranding) | Local LLM management CLI |
+| `apps/ollama` | `@bundt/ollama` | Local LLM management CLI (Ollama + Claude Code) |
 | `packages/hateoas` | `@bundt/hateoas` | React HATEOAS framework (client, server, protocol, react) |
 | `packages/waavy` | `@bundt/waavy` | React SSR for non-JavaScript server environments |
 | `packages/signals` | `@bundt/signals` | Signal graph abstractions (placeholder, not yet implemented) |
@@ -75,7 +75,7 @@ Libraries (`packages/`) may use source-level exports (like hateoas) or compiled 
 - **Bun** is the runtime, package manager, bundler, and test runner
 - **Turborepo** orchestrates tasks across the workspace
 - **Zod 4** for validation schemas (dxdocs, cleo)
-- **cac** for CLI argument parsing (cleo, loclaude, waavy)
+- **cac** for CLI argument parsing (cleo, ollama, waavy)
 - **picocolors** for terminal colors
 - **debug** for debug logging (waavy)
 
@@ -102,18 +102,19 @@ Libraries (`packages/`) may use source-level exports (like hateoas) or compiled 
 - Build produces: `dist/index.bun.js` (lib) + `dist/cli.bun.js` (CLI) + CSS copied to dist
 - Peer depends on `zod@^4.0.0`
 
-### loclaude (`apps/loclaude`)
+### ollama (`apps/ollama`)
 
-- Originally a workspace-within-workspace (libs/cli), now flattened
+- Local LLM management CLI — run Claude Code with Ollama models
+- CLI binary: `ollama-bundt` (avoids conflict with Ollama's own `ollama` binary)
+- Config paths: `.ollama-bundt/config.json`, `~/.config/ollama-bundt/config.json`
 - Manages local LLM processes via `child_process` spawn
 - Needs `@types/node` in devDeps for cross-runtime type resolution
 - Tests excluded from tsconfig (run separately via `bun test`)
-- Pending rebrand to a better name under `@bundt/` scope
 
 ### hateoas (`packages/hateoas`)
 
 - Multi-entry library: `./`, `./server`, `./client`, `./react`, `./protocol`
-- Source-level exports (no build step yet) — imports point directly to `src/`
+- Multi-entry build: `dist/index.js`, `dist/server.js`, `dist/client.js`, `dist/react.js`, `dist/protocol.js`
 - 42 tests across 4 test files
 - No external dependencies beyond React (peer)
 
@@ -152,5 +153,5 @@ See `.claude/specs/FAST_FOLLOWS.md` for the comprehensive list of 12 prioritized
 - Release pipeline
 - BCP driver integration for cleo
 - Documentation site
-- loclaude rebrand
+- ~~loclaude rebrand~~ (done — now `@bundt/ollama`)
 - CI/CD setup

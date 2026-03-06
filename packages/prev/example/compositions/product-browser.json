@@ -1,0 +1,19 @@
+{
+  "intent": "Browse products with a list and detail side-by-side",
+  "layout": "split-horizontal",
+  "fragments": [
+    {
+      "fragmentId": "product-list",
+      "props": { "title": "Browse Products" },
+      "data": {
+        "products": { "source": "products", "params": { "limit": 6 } }
+      }
+    },
+    {
+      "fragmentId": "product-detail",
+      "data": {
+        "detail": { "source": "product-detail", "params": { "productId": "1" } }
+      }
+    }
+  ]
+}
