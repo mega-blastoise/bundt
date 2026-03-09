@@ -1,6 +1,6 @@
 {
   "name": "@bundt/prev",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "Agent-native dynamic UI framework. Server-composed, streaming React SSR with fragment-based micro-frontends.",
   "license": "MIT",
