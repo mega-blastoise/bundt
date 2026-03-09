@@ -8,8 +8,6 @@ Agent-native dynamic UI framework. Server-composed, streaming React SSR with fra
 
 `prev` is a React SSR framework where the **server composes the UI** from registered building blocks called **Fragments**. Instead of static page routes, an AI agent (or any orchestrator) sends a structured composition request describing which fragments to show, how to lay them out, and how to wire data between them. The server assembles a **Frame**, streams it to the browser, and handles ongoing interactions via WebSocket.
 
-The name is a direct response to "Next" — `prev` is built for the AI-native web, where the UI itself is a response.
-
 ## Install
 
 ```sh
