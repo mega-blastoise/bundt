@@ -1,0 +1,9 @@
+node_modules
+dist
+.git
+.github
+apps
+crates
+websites/landing
+websites/docs
+*.md
