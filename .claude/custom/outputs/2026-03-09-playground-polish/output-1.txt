@@ -1,0 +1,39 @@
+Now I have full orientation. Here's the state and plan:
+
+Current State Summary
+
+┌────────────────────┬───────────────────────┬─────────────────────────────────────────┐
+│     Component      │        Status         │               What's Left               │
+├────────────────────┼───────────────────────┼─────────────────────────────────────────┤
+│ Playground code    │ Complete              │ All 6 source files, Dockerfile, config  │
+│ (Phases 1-7)       │                       │                                         │
+├────────────────────┼───────────────────────┼─────────────────────────────────────────┤
+│ Playground testing │ Not started           │ Local run verification                  │
+│  (Phase 8)         │                       │                                         │
+├────────────────────┼───────────────────────┼─────────────────────────────────────────┤
+│ prev 0.2.0 publish │ Not needed yet        │ dist exists with server-exports;        │
+│  (Phase 9)         │                       │ workspace dep works locally             │
+├────────────────────┼───────────────────────┼─────────────────────────────────────────┤
+│ Docker build       │ Not started           │ Build + verify                          │
+│ (Phase 10)         │                       │                                         │
+├────────────────────┼───────────────────────┼─────────────────────────────────────────┤
+│ Landing site       │ Built, not deployed   │ ACM cert + CloudFront + Route53         │
+├────────────────────┼───────────────────────┼─────────────────────────────────────────┤
+│ Docs site          │ Built (19 pages), not │ Same as landing                         │
+│                    │  deployed             │                                         │
+├────────────────────┼───────────────────────┼─────────────────────────────────────────┤
+│ Cookbook recipes   │ 5 exist               │ Need prev/signals/showcase recipes      │
+│                    │ (cleo-focused)        │                                         │
+└────────────────────┴───────────────────────┴─────────────────────────────────────────┘
+
+Execution Plan
+
+Step 1: Test playground locally — run the server, fix any runtime issues
+Step 2: Fix Dockerfile for monorepo workspace resolution
+Step 3: Add new cookbook recipes (prev playground, agent-composed dashboard, support
+dashboard)
+Step 4: Add playground link to landing site nav/showcase
+Step 5: Create EC2 deploy guide + GitHub Actions workflow
+Step 6: Verify landing site builds clean
+
+Let me start

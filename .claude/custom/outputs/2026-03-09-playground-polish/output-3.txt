@@ -1,0 +1,75 @@
+prev Playground — Usage Guide
+
+What It Is
+
+A live demo where you describe a UI in natural language (or click a preset) and watch a
+server-rendered workspace materialize instantly. No API key needed — prev's built-in intent
+  resolver handles composition.
+
+Starting It
+
+# From monorepo root
+bun run websites/playground/src/server.ts
+# Open http://localhost:3000
+
+Two Ways to Compose
+
+1. Presets (instant)
+Click any of the 4 preset cards:
+- Analytics Dashboard — KPI grid + revenue bar chart + tickets table
+- Support Queue — ticket list + user card + activity feed (click a ticket → user card
+updates)
+- System Monitor — 3 live metric cards (CPU, memory, req/sec) + activity feed with
+real-time WebSocket updates
+- Code Review — code block + markdown notes + alert banners
+
+2. Free-form Intent (type anything)
+Type a description in the prompt bar and hit Compose. Examples:
+show me revenue metrics and a trend chart
+display support tickets with team activity
+show server stats and notifications
+give me a code review workspace
+show me user profiles and recent activity
+
+The intent resolver scores your input against the 10 registered fragments by keyword match,
+  selects the best fits, binds their data sources, picks a layout, and returns a streaming
+SSR frame.
+
+What You're Looking At
+
+After composing, an iframe loads the rendered workspace at /frame/{frameId}. The workspace
+contains:
+- Fragments — self-contained UI components (cards, charts, tables, feeds)
+- Live data — data sources feed fragments; some update in real-time via WebSocket
+(server-stats pushes every 2s)
+- Interactions — clickable rows/items emit events via data-prev-interaction attributes;
+bindings route those events to other fragments
+
+The Fragment Catalog
+
+Click the expandable "Fragment Catalog" at the bottom to see all 10 fragments and 7 data
+sources with descriptions and tags. Sources marked live support WebSocket subscriptions.
+
+API Endpoints
+
+┌───────────────┬────────┬──────────────────────────────────────────────────────────────┐
+│   Endpoint    │ Method │                         What it does                         │
+├───────────────┼────────┼──────────────────────────────────────────────────────────────┤
+│ /             │ GET    │ Playground HTML page                                         │
+├───────────────┼────────┼──────────────────────────────────────────────────────────────┤
+│ /api/compose  │ POST   │ {"preset":"analytics-dashboard"} or {"intent":"show          │
+│               │        │ tickets"}                                                    │
+├───────────────┼────────┼──────────────────────────────────────────────────────────────┤
+│ /api/presets  │ GET    │ List available presets                                       │
+├───────────────┼────────┼──────────────────────────────────────────────────────────────┤
+│ /api/registry │ GET    │ Full fragment + data source catalog                          │
+├───────────────┼────────┼──────────────────────────────────────────────────────────────┤
+│ /frame/:id    │ GET    │ SSR'd workspace HTML                                         │
+├───────────────┼────────┼──────────────────────────────────────────────────────────────┤
+│ /ws           │ WS     │ Live interactions + data subscription updates                │
+└───────────────┴────────┴──────────────────────────────────────────────────────────────┘
+
+Docker
+
+docker build -f websites/playground/Dockerfile -t prev-playground .
+docker run -d -p 80:3000 prev-playground

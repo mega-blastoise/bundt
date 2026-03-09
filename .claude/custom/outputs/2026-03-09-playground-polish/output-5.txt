@@ -1,0 +1,31 @@
+All 4 presets return 200. Bug #1 fixed. Now let me tackle the big refactor — fragments, fonts, Claude integration. Let me plan the file structure:
+
+websites/playground/src/
+  fragments/
+    components/          # Pure React components
+      MetricCard.tsx
+      DataTable.tsx
+      BarChart.tsx
+      StatusList.tsx
+      UserCard.tsx
+      ActivityFeed.tsx
+      CodeBlock.tsx
+      AlertBanner.tsx
+      KpiGrid.tsx
+      MarkdownBlock.tsx
+      ... (new ones)
+    definitions/         # defineFragment wrappers
+      metric-card.ts
+      data-table.ts
+      ...
+    index.ts             # allFragments export
+    styles.ts            # shared style tokens
+  data-sources/          # split from single file
+  compose.ts
+  chat.ts               # Claude Messages API proxy
+  server.ts
+  playground-html.ts
+  presets.ts
+
+This is a large refactor. Let me start with the fragment component extraction, new
+fragments, font fix, lucide, and the Claude chat integration.

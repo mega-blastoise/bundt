@@ -1,0 +1,30 @@
+1. Bug fix: markdown-block fragment's render crashes when props.content is undefined (the
+Support Queue preset doesn't pass content to any fragment, but the code-review preset's
+markdown-block does — so the issue is likely in how the composition engine resolves props
+for fragments that have .default() in their Zod schema but receive undefined at runtime).
+Need to trace and fix.
+2. Fragment overhaul:
+  - Drop Inter, use the project's actual font stack
+  - Extract JSX from defineFragment({ render }) into standalone components — e.g.
+MetricCard.tsx component imported by the fragment definition, keeping defineFragment as the
+  thin registration wrapper
+  - Add lucide-react for icons
+  - Polish the existing 10 fragments significantly (better visual design, more complete
+features)
+  - Expand the catalog to 30+ fragments across more categories
+  - This is a modular refactor, not a prev API change
+3. Claude Code MCP integration:
+  - Add a second composition mode: conversational, powered by Claude's Messages API
+  - User provides their own Anthropic API key via a text input in the playground UI (stored
+  client-side only, sent per-request)
+  - Server proxies to Claude Messages API with prev's MCP tool definitions (the
+createMcpHandler already exists in prev's server exports)
+  - Claude can compose/update frames via tool_use calls
+  - This is the "chat with an agent that builds your UI" experience, distinct from the
+instant preset/intent modes
+  - No cost to us — user's key, user's spend
+
+Before I start, one clarification: for the Claude integration, are we calling the Claude
+Messages API directly (server-side HTTP to api.anthropic.com), or are you envisioning
+spawning an actual claude CLI process? The Messages API is cleaner and more controllable
+for this use case — I'd recommend that path.

@@ -1,0 +1,88 @@
+Summary
+
+Bug Fix: Support Queue Preset
+
+The __resolve_N__ binding placeholders in preset compositions were never resolved to actual
+  fragment instance IDs. Added resolvePlaceholder() in
+packages/prev/src/composition/engine.ts that maps __resolve_0__ → instances[0].instanceId
+before binding resolution. All 6 presets now compose successfully.
+
+Fragment Overhaul
+
+- Extracted JSX from defineFragment({ render }) into standalone component files
+(fragments/components/*.tsx). Fragment definitions in fragments/index.tsx are thin wrappers
+  that import and delegate to components.
+- Removed Inter font — now uses system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif
+for body text, JetBrains Mono for monospace.
+- Added lucide-react — all fragments use Lucide icons (TrendingUp, Table2, BarChart3,
+Circle, Mail, AlertTriangle, etc.)
+- Shared design tokens in fragments/styles.ts — colors, fonts, card/heading/pill/label
+styles, status/priority color maps.
+- Expanded catalog from 10 to 19 fragments:
+  - New: ProgressTracker, TagCloud, CommandPalette, SparklineCard, PieChart, TeamGrid,
+TimelineCard, EnvironmentStatus, LogViewer
+- Expanded data sources from 7 to 15:
+  - New: deployment-steps, tags, commands, analytics-sparkline, distribution, timeline,
+environments, logs (live)
+- Added 2 new presets (6 total):
+  - DevOps Pipeline: progress tracker + environment status + log viewer + alerts
+  - Project Overview: team grid + timeline + pie chart + tag cloud
+
+Claude Chat Integration
+
+- New file: src/chat.ts — Messages API proxy with agentic tool-use loop
+- User provides their own Anthropic API key via a password input in the UI (stored
+client-side only, sent per-request in the POST body)
+- Server proxies to api.anthropic.com/v1/messages with prev's MCP tool definitions
+(compose_frame, mutate_frame, list_fragments, list_data_sources, get_frame_state,
+query_data, navigate_history)
+- Runs an agent loop (up to 5 iterations) — Claude calls tools, server executes them via
+mcpHandler.handleToolCall(), feeds results back
+- When compose_frame or mutate_frame returns a frameId, the UI loads the frame in the
+workspace iframe
+- Chat history maintained per session server-side
+- UI has two modes: "Instant" (presets + intent) and "Chat with Claude" (conversational)
+
+Playground HTML
+
+- Removed Inter font, uses system fonts + JetBrains Mono
+- Added mode tabs (Instant / Chat with Claude)
+- Added chat panel with API key input, message history, and send button
+- Updated header with fragment/source counts
+- Updated footer to use monospace font
+
+Files Changed
+
+packages/prev/src/composition/engine.ts         # __resolve_N__ placeholder fix
+packages/prev/src/composition/binding-resolver.ts # (unchanged, fix is upstream)
+websites/playground/src/fragments.tsx             # DELETED (old monolithic file)
+websites/playground/src/fragments/
+  styles.ts                                       # NEW — shared design tokens
+  index.tsx                                       # NEW — 19 fragment definitions
+  components/MetricCard.tsx                       # NEW
+  components/DataTable.tsx                        # NEW
+  components/BarChart.tsx                         # NEW
+  components/StatusList.tsx                       # NEW
+  components/UserCard.tsx                         # NEW
+  components/ActivityFeed.tsx                     # NEW
+  components/CodeBlock.tsx                        # NEW
+  components/AlertBanner.tsx                      # NEW
+  components/KpiGrid.tsx                          # NEW
+  components/MarkdownBlock.tsx                    # NEW
+  components/ProgressTracker.tsx                  # NEW
+  components/TagCloud.tsx                         # NEW
+  components/CommandPalette.tsx                   # NEW
+  components/SparklineCard.tsx                    # NEW
+  components/PieChart.tsx                         # NEW
+  components/TeamGrid.tsx                         # NEW
+  components/TimelineCard.tsx                     # NEW
+  components/EnvironmentStatus.tsx                # NEW
+  components/LogViewer.tsx                        # NEW
+websites/playground/src/data-sources.ts           # Updated — 15 data sources
+websites/playground/src/presets.ts                # Updated — 6 presets
+websites/playground/src/playground-html.ts        # Rewritten — new UI with chat
+websites/playground/src/chat.ts                   # NEW — Claude Messages API
+websites/playground/src/server.ts                 # Updated — chat route + MCP handler
+websites/playground/package.json                  # Added lucide-react
+
+✻ Sautéed for 12m 19s
