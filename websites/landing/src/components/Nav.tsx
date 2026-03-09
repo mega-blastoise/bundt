@@ -48,6 +48,9 @@ export function Nav() {
           <Link to="/cookbook" className={linkClass('/cookbook')}>
             Cookbook
           </Link>
+          <a href="https://playground.bundt-dev.io" className="text-sm text-slate-400 hover:text-white transition-colors">
+            Playground
+          </a>
           <a href="#packages" className="text-sm text-slate-400 hover:text-white transition-colors">
             Packages
           </a>

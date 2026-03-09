@@ -1,65 +1,215 @@
 import { useRef, useState, useMemo, useCallback } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, MeshReflectorMaterial, Environment, RoundedBox } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { Float, RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 
 const PACKAGES = [
   {
     name: '@bundt/cleo',
+    abbrev: 'CLEO',
     tagline: 'Claude extensions orchestrator',
     tags: ['cli', 'ai', 'mcp'],
     gradient: ['#8b5cf6', '#7c3aed'],
-    icon: 'C',
     released: true,
+    // Terminal icon path
+    iconPath: (ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number) => {
+      ctx.lineWidth = s * 0.08;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      // terminal box
+      ctx.beginPath();
+      ctx.roundRect(cx - s * 0.5, cy - s * 0.4, s, s * 0.8, s * 0.1);
+      ctx.stroke();
+      // prompt arrow >_
+      ctx.beginPath();
+      ctx.moveTo(cx - s * 0.25, cy - s * 0.1);
+      ctx.lineTo(cx - s * 0.05, cy + s * 0.05);
+      ctx.lineTo(cx - s * 0.25, cy + s * 0.2);
+      ctx.stroke();
+      // cursor line
+      ctx.beginPath();
+      ctx.moveTo(cx + s * 0.05, cy + s * 0.2);
+      ctx.lineTo(cx + s * 0.25, cy + s * 0.2);
+      ctx.stroke();
+    },
   },
   {
     name: '@bundt/prev',
+    abbrev: 'PREV',
     tagline: 'Agent-native UI framework',
     tags: ['react', 'ssr', 'ai'],
     gradient: ['#f59e0b', '#d97706'],
-    icon: 'P',
     released: true,
+    // Layout/grid icon
+    iconPath: (ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number) => {
+      ctx.lineWidth = s * 0.08;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      // outer rect
+      ctx.beginPath();
+      ctx.roundRect(cx - s * 0.45, cy - s * 0.4, s * 0.9, s * 0.8, s * 0.08);
+      ctx.stroke();
+      // horizontal divider
+      ctx.beginPath();
+      ctx.moveTo(cx - s * 0.45, cy - s * 0.05);
+      ctx.lineTo(cx + s * 0.45, cy - s * 0.05);
+      ctx.stroke();
+      // vertical divider (bottom half)
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - s * 0.05);
+      ctx.lineTo(cx, cy + s * 0.4);
+      ctx.stroke();
+    },
   },
   {
     name: '@bundt/dxdocs',
+    abbrev: 'DXDC',
     tagline: 'Zero-JS documentation',
     tags: ['docs', 'mdx', 'ssg'],
     gradient: ['#3b82f6', '#0891b2'],
-    icon: 'D',
     released: true,
+    // FileText icon
+    iconPath: (ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number) => {
+      ctx.lineWidth = s * 0.08;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      // file shape with folded corner
+      ctx.beginPath();
+      ctx.moveTo(cx - s * 0.3, cy - s * 0.45);
+      ctx.lineTo(cx + s * 0.1, cy - s * 0.45);
+      ctx.lineTo(cx + s * 0.35, cy - s * 0.2);
+      ctx.lineTo(cx + s * 0.35, cy + s * 0.45);
+      ctx.lineTo(cx - s * 0.3, cy + s * 0.45);
+      ctx.closePath();
+      ctx.stroke();
+      // fold
+      ctx.beginPath();
+      ctx.moveTo(cx + s * 0.1, cy - s * 0.45);
+      ctx.lineTo(cx + s * 0.1, cy - s * 0.2);
+      ctx.lineTo(cx + s * 0.35, cy - s * 0.2);
+      ctx.stroke();
+      // text lines
+      ctx.beginPath();
+      ctx.moveTo(cx - s * 0.15, cy);
+      ctx.lineTo(cx + s * 0.2, cy);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx - s * 0.15, cy + s * 0.18);
+      ctx.lineTo(cx + s * 0.2, cy + s * 0.18);
+      ctx.stroke();
+    },
   },
   {
     name: '@bundt/ollama',
+    abbrev: 'OLLM',
     tagline: 'Local LLM management',
     tags: ['cli', 'ai', 'llm'],
     gradient: ['#f43f5e', '#ec4899'],
-    icon: 'O',
     released: false,
+    // Brain/CPU icon
+    iconPath: (ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number) => {
+      ctx.lineWidth = s * 0.08;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      // CPU square
+      ctx.beginPath();
+      ctx.roundRect(cx - s * 0.25, cy - s * 0.25, s * 0.5, s * 0.5, s * 0.06);
+      ctx.stroke();
+      // inner square
+      ctx.beginPath();
+      ctx.roundRect(cx - s * 0.12, cy - s * 0.12, s * 0.24, s * 0.24, s * 0.03);
+      ctx.stroke();
+      // pins top/bottom/left/right
+      const pins = [-s * 0.1, 0, s * 0.1];
+      for (const p of pins) {
+        ctx.beginPath(); ctx.moveTo(cx + p, cy - s * 0.25); ctx.lineTo(cx + p, cy - s * 0.4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx + p, cy + s * 0.25); ctx.lineTo(cx + p, cy + s * 0.4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx - s * 0.25, cy + p); ctx.lineTo(cx - s * 0.4, cy + p); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx + s * 0.25, cy + p); ctx.lineTo(cx + s * 0.4, cy + p); ctx.stroke();
+      }
+    },
   },
   {
     name: '@bundt/signals',
+    abbrev: 'SGNL',
     tagline: 'Reactive signal graph',
     tags: ['reactive', 'signals'],
     gradient: ['#10b981', '#14b8a6'],
-    icon: 'S',
     released: true,
+    // Activity/zap icon
+    iconPath: (ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number) => {
+      ctx.lineWidth = s * 0.08;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      // activity line (heartbeat shape)
+      ctx.beginPath();
+      ctx.moveTo(cx - s * 0.45, cy);
+      ctx.lineTo(cx - s * 0.25, cy);
+      ctx.lineTo(cx - s * 0.12, cy - s * 0.35);
+      ctx.lineTo(cx + s * 0.02, cy + s * 0.3);
+      ctx.lineTo(cx + s * 0.15, cy - s * 0.15);
+      ctx.lineTo(cx + s * 0.25, cy);
+      ctx.lineTo(cx + s * 0.45, cy);
+      ctx.stroke();
+    },
   },
   {
     name: '@bundt/hateoas',
+    abbrev: 'HTOA',
     tagline: 'Hypermedia React framework',
     tags: ['react', 'rest'],
     gradient: ['#0ea5e9', '#6366f1'],
-    icon: 'H',
     released: false,
+    // Link/chain icon
+    iconPath: (ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number) => {
+      ctx.lineWidth = s * 0.08;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      const r = s * 0.15;
+      // left link
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.2, cy - s * 0.15, r, Math.PI * 0.5, Math.PI * 1.5);
+      ctx.lineTo(cx - s * 0.05, cy - s * 0.15 - r);
+      ctx.arc(cx - s * 0.05, cy - s * 0.15, r, -Math.PI * 0.5, Math.PI * 0.5);
+      ctx.lineTo(cx - s * 0.2, cy - s * 0.15 + r);
+      ctx.stroke();
+      // right link
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.2, cy + s * 0.15, r, -Math.PI * 0.5, Math.PI * 0.5);
+      ctx.lineTo(cx + s * 0.05, cy + s * 0.15 + r);
+      ctx.arc(cx + s * 0.05, cy + s * 0.15, r, Math.PI * 0.5, Math.PI * 1.5);
+      ctx.lineTo(cx + s * 0.2, cy + s * 0.15 - r);
+      ctx.stroke();
+    },
   },
   {
     name: '@bundt/waavy',
+    abbrev: 'WAVY',
     tagline: 'Polyglot React SSR',
     tags: ['react', 'ssr'],
     gradient: ['#d946ef', '#8b5cf6'],
-    icon: 'W',
     released: false,
+    // Waves icon
+    iconPath: (ctx: CanvasRenderingContext2D, cx: number, cy: number, s: number) => {
+      ctx.lineWidth = s * 0.08;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      for (const dy of [-s * 0.2, 0, s * 0.2]) {
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.4, cy + dy);
+        ctx.bezierCurveTo(
+          cx - s * 0.2, cy + dy - s * 0.15,
+          cx, cy + dy + s * 0.15,
+          cx + s * 0.2, cy + dy - s * 0.05
+        );
+        ctx.bezierCurveTo(
+          cx + s * 0.3, cy + dy - s * 0.1,
+          cx + s * 0.35, cy + dy,
+          cx + s * 0.4, cy + dy
+        );
+        ctx.stroke();
+      }
+    },
   },
 ];
 
@@ -72,67 +222,78 @@ function renderCardTexture(pkg: typeof PACKAGES[number]) {
   canvas.height = TEX_H;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.fillStyle = '#0c0c1e';
+  // Background — slightly lighter so texture reads well without scene lighting
+  ctx.fillStyle = '#111130';
   ctx.beginPath();
   ctx.roundRect(0, 0, TEX_W, TEX_H, 16);
   ctx.fill();
 
+  // Top accent bar
   const grad = ctx.createLinearGradient(0, 0, TEX_W, 0);
   grad.addColorStop(0, pkg.gradient[0]);
   grad.addColorStop(1, pkg.gradient[1]);
   ctx.fillStyle = grad;
   ctx.fillRect(24, 16, TEX_W - 48, 3);
 
-  ctx.fillStyle = pkg.gradient[0] + '18';
+  // Subtle background circle for icon area
+  ctx.fillStyle = pkg.gradient[0] + '20';
   ctx.beginPath();
-  ctx.arc(TEX_W - 70, TEX_H / 2, 80, 0, Math.PI * 2);
+  ctx.arc(TEX_W / 2, TEX_H / 2 + 10, 70, 0, Math.PI * 2);
   ctx.fill();
 
-  const iconGrad = ctx.createLinearGradient(TEX_W - 120, TEX_H / 2 - 30, TEX_W - 40, TEX_H / 2 + 30);
+  // Center icon (drawn with canvas paths)
+  const iconGrad = ctx.createLinearGradient(TEX_W / 2 - 40, TEX_H / 2 - 30, TEX_W / 2 + 40, TEX_H / 2 + 30);
   iconGrad.addColorStop(0, pkg.gradient[0]);
   iconGrad.addColorStop(1, pkg.gradient[1]);
-  ctx.fillStyle = iconGrad;
-  ctx.font = 'bold 56px "Fira Sans", system-ui, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(pkg.icon, TEX_W - 70, TEX_H / 2);
+  ctx.strokeStyle = iconGrad;
+  ctx.fillStyle = 'transparent';
+  pkg.iconPath(ctx, TEX_W / 2, TEX_H / 2 + 10, 80);
 
+  // 4-letter abbreviation — top right
+  ctx.fillStyle = pkg.gradient[0] + '90';
+  ctx.font = 'bold 18px "JetBrains Mono", monospace';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  ctx.fillText(pkg.abbrev, TEX_W - 28, 28);
+
+  // Package name — top left
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 22px "JetBrains Mono", monospace';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.fillText(pkg.name, 28, 40);
 
+  // "SOON" badge for unreleased
   if (!pkg.released) {
     const label = 'SOON';
-    ctx.font = 'bold 10px "Fira Sans", system-ui, sans-serif';
-    const labelW = ctx.measureText(label).width + 12;
-    // const labelX = 28 + ctx.measureText(pkg.name).width + 10;
-    ctx.save();
     ctx.font = 'bold 22px "JetBrains Mono", monospace';
     const nameW = ctx.measureText(pkg.name).width;
-    ctx.restore();
     const lx = 28 + nameW + 12;
+    ctx.font = 'bold 10px "Fira Sans", system-ui, sans-serif';
+    const labelW = ctx.measureText(label).width + 12;
     ctx.strokeStyle = '#fbbf2450';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.roundRect(lx, 42, labelW, 16, 4);
     ctx.stroke();
     ctx.fillStyle = '#fbbf24';
-    ctx.font = 'bold 10px "Fira Sans", system-ui, sans-serif';
     ctx.fillText(label, lx + 6, 45);
   }
 
+  // Tagline
   ctx.fillStyle = pkg.gradient[0];
   ctx.font = '500 16px "Fira Sans", system-ui, sans-serif';
+  ctx.textAlign = 'left';
   ctx.fillText(pkg.tagline, 28, 74);
 
+  // Tags at bottom
   ctx.fillStyle = '#64748b';
   ctx.font = '600 11px "Fira Sans", system-ui, sans-serif';
   const tagStr = pkg.tags.map((t) => t.toUpperCase()).join('   ');
   ctx.fillText(tagStr, 28, TEX_H - 36);
 
-  ctx.strokeStyle = pkg.gradient[0] + '15';
+  // Border
+  ctx.strokeStyle = pkg.gradient[0] + '30';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.roundRect(1, 1, TEX_W - 2, TEX_H - 2, 16);
@@ -155,7 +316,8 @@ function CarouselCard({ index, activeIndex, pkg, onClick }: {
   onClick: () => void;
 }) {
   const groupRef = useRef<THREE.Group>(null!);
-  const matRef = useRef<THREE.MeshStandardMaterial>(null!);
+  const matRef = useRef<THREE.MeshBasicMaterial>(null!);
+  const glowRef = useRef<THREE.MeshBasicMaterial>(null!);
   const targetAngle = useRef(0);
   const currentAngle = useRef((index / CARD_COUNT) * Math.PI * 2);
   const texture = useMemo(() => renderCardTexture(pkg), [pkg]);
@@ -171,30 +333,29 @@ function CarouselCard({ index, activeIndex, pkg, onClick }: {
     groupRef.current.rotation.y = angle;
 
     const dist = Math.abs(((index - activeIndex + CARD_COUNT / 2) % CARD_COUNT) - CARD_COUNT / 2);
-    const scale = THREE.MathUtils.lerp(1.1, 0.9, Math.min(dist / (CARD_COUNT / 2), 1));
+    const norm = Math.min(dist / (CARD_COUNT / 2), 1);
+    const scale = THREE.MathUtils.lerp(1.1, 0.9, norm);
     groupRef.current.scale.setScalar(scale);
 
-    matRef.current.opacity = THREE.MathUtils.lerp(0.95, 0.4, Math.min(dist / (CARD_COUNT / 2), 1));
+    matRef.current.opacity = THREE.MathUtils.lerp(1, 0.45, norm);
+    glowRef.current.opacity = THREE.MathUtils.lerp(0.12, 0.03, norm);
   });
 
   return (
     <group ref={groupRef} onClick={onClick}>
-      <RoundedBox args={[CARD_WIDTH, CARD_HEIGHT, 0.04]} radius={0.03} smoothness={4} castShadow>
-        <meshStandardMaterial
+      <RoundedBox args={[CARD_WIDTH, CARD_HEIGHT, 0.04]} radius={0.03} smoothness={4}>
+        <meshBasicMaterial
           ref={matRef}
           map={texture}
           transparent
-          opacity={0.9}
-          roughness={0.3}
-          metalness={0.1}
-          envMapIntensity={0.3}
+          opacity={1}
         />
       </RoundedBox>
 
-      {/* Subtle glow behind */}
+      {/* Colored glow behind card */}
       <mesh position={[0, 0, -0.06]}>
-        <planeGeometry args={[CARD_WIDTH + 0.2, CARD_HEIGHT + 0.2]} />
-        <meshBasicMaterial color={pkg.gradient[0]} transparent opacity={0.04} />
+        <planeGeometry args={[CARD_WIDTH + 0.3, CARD_HEIGHT + 0.3]} />
+        <meshBasicMaterial ref={glowRef} color={pkg.gradient[0]} transparent opacity={0.1} />
       </mesh>
     </group>
   );
@@ -272,7 +433,7 @@ function AmbientParticles({ count = 50 }: { count?: number }) {
   return (
     <instancedMesh ref={mesh} args={[undefined, undefined, count]}>
       <sphereGeometry args={[1, 6, 6]} />
-      <meshBasicMaterial color="#8b5cf6" transparent opacity={0.25} />
+      <meshBasicMaterial color="#a78bfa" transparent opacity={0.4} />
     </instancedMesh>
   );
 }
@@ -281,19 +442,7 @@ function Ground() {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.8, 0]}>
       <planeGeometry args={[50, 50]} />
-      <MeshReflectorMaterial
-        blur={[400, 100]}
-        resolution={1024}
-        mixBlur={1}
-        mixStrength={40}
-        roughness={1}
-        depthScale={1.2}
-        minDepthThreshold={0.4}
-        maxDepthThreshold={1.4}
-        color="#08081a"
-        metalness={0.5}
-        mirror={0}
-      />
+      <meshStandardMaterial color="#08081a" roughness={1} metalness={0.3} />
     </mesh>
   );
 }
@@ -302,21 +451,16 @@ function Scene() {
   return (
     <>
       <color attach="background" args={['#020617']} />
-      <fog attach="fog" args={['#020617', 10, 22]} />
+      <fog attach="fog" args={['#020617', 14, 28]} />
 
-      <ambientLight intensity={0.15} />
-      <spotLight position={[5, 8, 2]} angle={0.3} penumbra={1} intensity={2} color="#8b5cf6" castShadow />
-      <spotLight position={[-4, 6, -3]} angle={0.4} penumbra={1} intensity={1.2} color="#6d28d9" />
-      <pointLight position={[0, 3, 4]} intensity={0.5} color="#a78bfa" />
+      <ambientLight intensity={0.4} />
+      <spotLight position={[5, 8, 2]} angle={0.3} penumbra={1} intensity={3} color="#8b5cf6" />
+      <spotLight position={[-4, 6, -3]} angle={0.4} penumbra={1} intensity={2} color="#6d28d9" />
+      <pointLight position={[0, 3, 4]} intensity={1} color="#a78bfa" />
 
       <Carousel />
       <AmbientParticles />
       <Ground />
-      <Environment preset="night" />
-
-      <EffectComposer>
-        <Bloom intensity={0.5} luminanceThreshold={0.2} luminanceSmoothing={0.9} mipmapBlur />
-      </EffectComposer>
     </>
   );
 }
@@ -327,9 +471,18 @@ export function HeroScene() {
       <Canvas
         camera={{ position: [0, 0.8, 8], fov: 35 }}
         dpr={[1, 1.5]}
-        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
-        shadows
+        gl={{
+          antialias: true,
+          alpha: false,
+          powerPreference: 'high-performance',
+          failIfMajorPerformanceCaveat: false,
+        }}
         style={{ pointerEvents: 'auto' }}
+        onCreated={({ gl }) => {
+          gl.getContext().canvas.addEventListener('webglcontextlost', (e) => {
+            e.preventDefault();
+          });
+        }}
       >
         <Scene />
       </Canvas>
