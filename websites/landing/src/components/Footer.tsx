@@ -1,18 +1,26 @@
+import { Link } from 'react-router';
+
 export function Footer() {
   return (
     <footer className="border-t border-slate-800/50 py-12">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2.5">
+          <Link to="/" className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-md bg-gradient-to-br from-violet-400 to-purple-600 flex items-center justify-center font-mono font-bold text-xs text-white">
               b
             </div>
             <span className="text-sm text-slate-400">
               bundt
             </span>
-          </div>
+          </Link>
 
           <div className="flex items-center gap-6 text-sm text-slate-500">
+            <Link to="/setup" className="hover:text-slate-300 transition-colors">
+              Setup
+            </Link>
+            <Link to="/cookbook" className="hover:text-slate-300 transition-colors">
+              Cookbook
+            </Link>
             <a
               href="https://docs.bundt-dev.io"
               className="hover:text-slate-300 transition-colors"

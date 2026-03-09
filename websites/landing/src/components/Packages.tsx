@@ -1,4 +1,14 @@
-const packages = [
+type Package = {
+  name: string;
+  version: string;
+  description: string;
+  tags: string[];
+  href: string;
+  color: string;
+  prerelease?: boolean;
+};
+
+const packages: Package[] = [
   {
     name: '@bundt/cleo',
     version: '0.1.0',
@@ -30,6 +40,33 @@ const packages = [
     tags: ['reactive', 'signals', 'state'],
     href: 'https://www.npmjs.com/package/@bundt/signals',
     color: 'from-emerald-500 to-teal-600'
+  },
+  {
+    name: '@bundt/ollama',
+    version: '0.1.0',
+    description: 'Run Claude Code with local Ollama LLMs. Zero API costs, complete privacy. Manage local model lifecycles from a single CLI.',
+    tags: ['cli', 'ai', 'llm', 'local'],
+    href: 'https://github.com/mega-blastoise/bundt',
+    color: 'from-rose-500 to-pink-600',
+    prerelease: true
+  },
+  {
+    name: '@bundt/hateoas',
+    version: '0.1.0',
+    description: 'Modern minimal React HATEOAS REST framework. Client, server, protocol, and React bindings for hypermedia-driven APIs.',
+    tags: ['react', 'rest', 'hateoas', 'framework'],
+    href: 'https://github.com/mega-blastoise/bundt',
+    color: 'from-sky-500 to-indigo-600',
+    prerelease: true
+  },
+  {
+    name: '@bundt/waavy',
+    version: '0.2.0',
+    description: 'React SSR for non-JavaScript server environments. Stream server-rendered React from Rust, Go, Python, or any backend.',
+    tags: ['react', 'ssr', 'polyglot', 'streaming'],
+    href: 'https://github.com/mega-blastoise/bundt',
+    color: 'from-fuchsia-500 to-purple-600',
+    prerelease: true
   }
 ];
 
@@ -41,7 +78,7 @@ export function Packages() {
       <div className="relative max-w-7xl mx-auto px-6">
         <div className="text-center mb-20">
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            The toolkit
+            The ecosystem
           </h2>
           <p className="text-lg text-slate-400 max-w-2xl mx-auto">
             Each package is independent, versioned separately, and published to npm under the <code className="text-violet-400 font-mono text-base">@bundt</code> scope.
@@ -61,13 +98,18 @@ export function Packages() {
               <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${pkg.color} opacity-0 group-hover:opacity-100 transition-opacity`} />
 
               <div className="flex items-start justify-between mb-3">
-                <div>
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-mono text-lg text-white group-hover:text-violet-300 transition-colors">
                     {pkg.name}
                   </span>
-                  <span className="ml-2 text-xs font-mono text-slate-600">
+                  <span className="text-xs font-mono text-slate-600">
                     v{pkg.version}
                   </span>
+                  {pkg.prerelease && (
+                    <span className="text-[9px] font-semibold uppercase tracking-widest px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-400">
+                      coming soon
+                    </span>
+                  )}
                 </div>
                 <svg className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition-colors mt-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />

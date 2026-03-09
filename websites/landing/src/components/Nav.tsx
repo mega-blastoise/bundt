@@ -1,13 +1,27 @@
 import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router';
 
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
+  const isActive = (path: string) =>
+    location.pathname === path || (path !== '/' && location.pathname.startsWith(path));
+
+  const linkClass = (path: string) =>
+    `text-sm transition-colors ${
+      isActive(path) ? 'text-violet-400' : 'text-slate-400 hover:text-white'
+    }`;
 
   return (
     <nav
@@ -18,16 +32,22 @@ export function Nav() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <a href="/" className="flex items-center gap-2.5 group">
+        <Link to="/" className="flex items-center gap-2.5 group">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-400 to-purple-600 flex items-center justify-center font-mono font-bold text-sm text-white">
             b
           </div>
           <span className="font-semibold text-white tracking-tight">
             bundt
           </span>
-        </a>
+        </Link>
 
         <div className="hidden md:flex items-center gap-8">
+          <Link to="/setup" className={linkClass('/setup')}>
+            Setup
+          </Link>
+          <Link to="/cookbook" className={linkClass('/cookbook')}>
+            Cookbook
+          </Link>
           <a href="#packages" className="text-sm text-slate-400 hover:text-white transition-colors">
             Packages
           </a>
