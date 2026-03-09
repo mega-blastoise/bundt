@@ -1,0 +1,10 @@
+{
+  "name": "bundt-docs",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run ../../apps/dxdocs/src/cli.ts dev",
+    "build": "bun run ../../apps/dxdocs/src/cli.ts build"
+  }
+}
