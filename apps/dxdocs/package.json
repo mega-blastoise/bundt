@@ -1,6 +1,6 @@
 {
   "name": "@bundt/dxdocs",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Beautiful documentation sites from MDX. Zero client JS, pure static HTML.",
   "license": "MIT",
