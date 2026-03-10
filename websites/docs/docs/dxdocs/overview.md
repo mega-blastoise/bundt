@@ -9,14 +9,29 @@ description: "@bundt/dxdocs is a static documentation site generator built on MD
 
 ## Key Features
 
-- **MDX support** — write documentation with embedded JSX components
-- **Zero client JS** — pages are pre-rendered to static HTML using React 19's `prerender()` API
+<CardGrid>
+  <Card title="Zero Client JS" icon="zap">
+    Pages are pre-rendered to static HTML using React 19's prerender() API. No framework shipped to the browser.
+  </Card>
+  <Card title="MDX Support" icon="file-code">
+    Write documentation with embedded JSX components. Built-in components available without imports.
+  </Card>
+  <Card title="Theme Presets" icon="palette">
+    5 built-in color themes (minimal, catppuccin, ayu, nord, gruvbox) with light and dark variants.
+  </Card>
+  <Card title="Coverpage" icon="layout">
+    Full-viewport landing page with gradient background, CTA buttons, and responsive typography.
+  </Card>
+</CardGrid>
+
 - **Syntax highlighting** — powered by Shiki with the `github-dark-default` theme
 - **GitHub Flavored Markdown** — tables, strikethrough, autolinks, task lists
-- **Built-in components** — callouts, cards, steps, and more
+- **Icon system** — 70+ lucide icons available by name in cards and MDX
 - **Dark mode** — automatic via `prefers-color-scheme` or forced light/dark
 - **Live reload** — development server with file watching
-- **Theming** — customizable accent colors and CSS custom properties
+- **Prev/next navigation** — automatic page links at the bottom of each article
+- **Footer** — configurable column layout with social links
+- **Logo support** — single image or light/dark pair in the header
 
 ## Quick Start
 
@@ -37,7 +52,11 @@ description: "@bundt/dxdocs is a static documentation site generator built on MD
     // dxdocs.config.ts
     export default {
       title: 'My Project',
-      description: 'Documentation for my project'
+      description: 'Documentation for my project',
+      theme: {
+        preset: 'minimal',
+        darkMode: 'dark'
+      }
     };
     ```
   </Step>

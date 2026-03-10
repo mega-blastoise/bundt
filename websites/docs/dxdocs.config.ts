@@ -1,6 +1,6 @@
 export default {
-  title: 'Bundt Docs',
-  description: 'Documentation for the Bundt developer toolkit — CLIs, frameworks, and libraries for the Bun runtime.',
+  title: 'Bundt',
+  description: 'Developer tools for the Bun runtime — CLIs, frameworks, and libraries.',
   base: '/',
   favicon: '/favicon.svg',
 
@@ -62,9 +62,53 @@ export default {
     }
   ],
 
+  coverpage: {
+    title: 'Bundt',
+    tagline: 'Developer tools for the Bun runtime',
+    description:
+      'A monorepo of TypeScript CLIs, frameworks, and libraries. Every package is independent, versioned separately, and published to npm under the @bundt scope.',
+    actions: [
+      { label: 'Get Started', href: '/getting-started/installation', primary: true },
+      { label: 'View on GitHub', href: 'https://github.com/mega-blastoise/bundt' }
+    ],
+    background: 'gradient'
+  },
+
+  footer: {
+    columns: [
+      {
+        title: 'Packages',
+        links: [
+          { label: 'Cleo', href: '/cleo/overview' },
+          { label: 'DXDocs', href: '/dxdocs/overview' },
+          { label: 'Prev', href: '/prev/overview' },
+          { label: 'Signals', href: '/signals/overview' }
+        ]
+      },
+      {
+        title: 'Resources',
+        links: [
+          { label: 'Installation', href: '/getting-started/installation' },
+          { label: 'Monorepo Structure', href: '/getting-started/monorepo' },
+          { label: 'BCP Docs', href: 'https://docs.bitcontextprotocol.com' }
+        ]
+      },
+      {
+        title: 'Community',
+        links: [
+          { label: 'GitHub', href: 'https://github.com/mega-blastoise/bundt' },
+          { label: 'npm', href: 'https://www.npmjs.com/org/bundt' }
+        ]
+      }
+    ],
+    socials: [
+      { icon: 'github', href: 'https://github.com/mega-blastoise/bundt', label: 'GitHub' }
+    ]
+  },
+
   theme: {
-    accentColor: '#7c3aed',
-    darkMode: 'media'
+    preset: 'minimal',
+    darkMode: 'dark'
   },
 
   output: {

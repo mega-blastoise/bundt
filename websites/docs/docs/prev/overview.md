@@ -39,16 +39,16 @@ server.listen(3000);
 ## Core Concepts
 
 <CardGrid>
-  <Card title="Architecture" href="/prev/architecture">
+  <Card title="Architecture" icon="layout" href="/prev/architecture">
     How Prev composes fragments into pages and manages the rendering pipeline.
   </Card>
-  <Card title="Fragments" href="/prev/fragments">
+  <Card title="Fragments" icon="puzzle" href="/prev/fragments">
     Independent UI units that can be authored, cached, and updated individually.
   </Card>
-  <Card title="Streaming SSR" href="/prev/streaming">
+  <Card title="Streaming SSR" icon="play" href="/prev/streaming">
     React server rendering with progressive streaming and Suspense support.
   </Card>
-  <Card title="WebSocket Interactions" href="/prev/websockets">
+  <Card title="WebSocket Interactions" icon="zap" href="/prev/websockets">
     Real-time UI updates without page reloads.
   </Card>
 </CardGrid>

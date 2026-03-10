@@ -10,16 +10,16 @@ Bundt is a monorepo of TypeScript developer tools targeting the **Bun runtime**.
 ## Packages
 
 <CardGrid>
-  <Card title="@bundt/cleo" href="/cleo/overview">
+  <Card title="@bundt/cleo" icon="terminal" href="/cleo/overview">
     Claude extensions orchestrator. Manage, discover, and run Claude Code agents and MCP server configurations.
   </Card>
-  <Card title="@bundt/dxdocs" href="/dxdocs/overview">
+  <Card title="@bundt/dxdocs" icon="book-open" href="/dxdocs/overview">
     Beautiful documentation sites from MDX. Zero client JavaScript, pure static HTML with syntax highlighting.
   </Card>
-  <Card title="@bundt/prev" href="/prev/overview">
+  <Card title="@bundt/prev" icon="layers" href="/prev/overview">
     Agent-native dynamic UI framework. Server-composed streaming React SSR with fragment-based micro-frontends.
   </Card>
-  <Card title="@bundt/signals" href="/signals/overview">
+  <Card title="@bundt/signals" icon="zap" href="/signals/overview">
     Reactive signal graph abstractions. Signals, computed values, and effects with automatic dependency tracking.
   </Card>
 </CardGrid>

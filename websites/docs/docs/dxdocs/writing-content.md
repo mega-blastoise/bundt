@@ -81,13 +81,15 @@ MDX lets you use JSX components inside your Markdown. DXDocs provides several [b
 </Callout>
 
 <CardGrid>
-  <Card title="Feature A" href="/features/a">
+  <Card title="Feature A" icon="code" href="/features/a">
     Description of feature A.
   </Card>
-  <Card title="Feature B" href="/features/b">
+  <Card title="Feature B" icon="database" href="/features/b">
     Description of feature B.
   </Card>
 </CardGrid>
+
+Use the <Icon name="star" /> component inline for icons anywhere in your content.
 ```
 
 ## Headings and Table of Contents

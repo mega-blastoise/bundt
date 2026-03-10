@@ -11,19 +11,16 @@ DXDocs is configured via a `dxdocs.config.ts` file in your project root.
 
 ```typescript
 export default {
-  // Site title — appears in the header and page titles
+  // Site metadata
   title: 'My Docs',
-
-  // Site description — used in meta tags
-  description: 'Documentation for my project',
-
-  // Base path for deployment (default: '/')
+  description: 'Project docs',
   base: '/',
 
-  // Path to logo image (optional)
+  // Logo — string path/URL or { light, dark, height } object
   logo: '/logo.svg',
+  // logo: { light: '/logo-light.svg', dark: '/logo-dark.svg', height: 32 },
 
-  // Path to favicon (optional)
+  // Favicon
   favicon: '/favicon.svg',
 
   // Navigation structure (auto-generated if omitted)
@@ -40,28 +37,64 @@ export default {
 
   // Links shown in the header
   headerLinks: [
-    { label: 'GitHub', href: 'https://github.com/...', icon: 'github' },
-    { label: 'npm', href: 'https://npmjs.com/...', icon: 'external' }
+    { label: 'GitHub', href: 'https://github.com/you/repo', icon: 'github' },
+    { label: 'API', href: 'https://api.example.com', icon: 'external' }
   ],
+
+  // Coverpage (renders on the index page)
+  coverpage: {
+    title: 'My Project',
+    tagline: 'A short tagline',
+    description: 'A longer description of the project.',
+    actions: [
+      { label: 'Get Started', href: '/install', primary: true },
+      { label: 'GitHub', href: 'https://github.com/...' }
+    ],
+    background: 'gradient'  // 'gradient' | 'solid' | 'none'
+  },
+
+  // Footer
+  footer: {
+    columns: [
+      {
+        title: 'Docs',
+        links: [
+          { label: 'Getting Started', href: '/install' },
+          { label: 'API Reference', href: '/api' }
+        ]
+      }
+    ],
+    copyright: '© 2026 My Project',
+    socials: [
+      { icon: 'github', href: 'https://github.com/...', label: 'GitHub' }
+    ]
+  },
 
   // Theme settings
   theme: {
-    accentColor: '#7c3aed',     // Custom accent color (hex)
-    darkMode: 'media'           // 'media' | 'light' | 'dark'
+    preset: 'minimal',         // 'minimal' | 'catppuccin' | 'ayu' | 'nord' | 'gruvbox'
+    accentColor: '#6d28d9',    // Override accent color (optional)
+    darkMode: 'media',         // 'media' | 'light' | 'dark'
+    overrides: {               // Per-token overrides (optional)
+      light: { bg: '#fefefe' },
+      dark: { bg: '#0a0a0a' }
+    }
   },
 
-  // MDX processing options
+  // MDX processing
   mdx: {
-    extensions: ['.md', '.mdx'], // File extensions to process
-    gfm: true                    // Enable GitHub Flavored Markdown
+    extensions: ['.md', '.mdx'],
+    gfm: true
   },
 
-  // Output settings
+  // Output
   output: {
-    outDir: './dist'             // Build output directory
+    outDir: './dist'
   }
 };
 ```
+
+The configuration schema is validated with Zod 4 at load time — invalid configs produce clear error messages.
 
 ## Navigation
 
@@ -95,6 +128,71 @@ navigation: [
 ```
 
 Groups can be nested for deeper hierarchies.
+
+## Logo
+
+The `logo` property supports two formats:
+
+```typescript
+// Simple — one image for both themes
+logo: '/logo.svg'
+
+// Theme-aware — different images for light and dark mode
+logo: {
+  light: '/logo-light.svg',
+  dark: '/logo-dark.svg',
+  height: 32  // optional, defaults to 28px
+}
+```
+
+The logo renders in the header alongside the site title.
+
+## Coverpage
+
+The coverpage renders a full-viewport hero section on the index page only:
+
+```typescript
+coverpage: {
+  title: 'My Project',
+  tagline: 'A concise tagline',
+  description: 'A longer description paragraph.',
+  actions: [
+    { label: 'Get Started', href: '/install', primary: true },
+    { label: 'View Source', href: 'https://github.com/...' }
+  ],
+  background: 'gradient'
+}
+```
+
+| Background | Description |
+|------------|-------------|
+| `'gradient'` | Blends from bg to accent-light (default) |
+| `'solid'` | Uses the theme background color |
+| `'none'` | Transparent background |
+
+## Footer
+
+```typescript
+footer: {
+  columns: [
+    {
+      title: 'Resources',
+      links: [
+        { label: 'Docs', href: '/docs' },
+        { label: 'Blog', href: 'https://blog.example.com' }
+      ]
+    }
+  ],
+  copyright: '© 2026 My Project',
+  socials: [
+    { icon: 'github', href: 'https://github.com/...' },
+    { icon: 'twitter', href: 'https://x.com/...' },
+    { icon: 'discord', href: 'https://discord.gg/...' }
+  ]
+}
+```
+
+External links in footer columns automatically show an arrow icon.
 
 ## File to URL Mapping
 
