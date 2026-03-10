@@ -15,7 +15,7 @@ function generate404Html(config: VoidConfig, cssContent: string): string {
   <title>404 - ${escapeHtml(config.title)}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>${cssContent}</style>
 </head>
 <body>
@@ -57,10 +57,12 @@ export async function startDevServer(
 ): Promise<void> {
   const docsDir = resolve(rootDir, 'docs');
 
-  const themeVars = generateCssVariables(
-    config.theme.darkMode,
-    config.theme.accentColor
-  );
+  const themeVars = generateCssVariables({
+    preset: config.theme.preset,
+    darkMode: config.theme.darkMode,
+    accentColor: config.theme.accentColor,
+    overrides: config.theme.overrides as Parameters<typeof generateCssVariables>[0]['overrides']
+  });
 
   const baseStylesPath = await resolveThemeStylesPath();
   const baseStyles = await Bun.file(baseStylesPath).text();
@@ -170,6 +172,7 @@ export async function startDevServer(
         currentPath,
         pageTitle,
         cssContent: css,
+        coverpage: config.coverpage,
         tail: liveReloadScript
       });
 

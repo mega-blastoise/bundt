@@ -61,10 +61,12 @@ export async function build(rootDir: string, config: VoidConfig): Promise<void> 
   const mdxFiles = await discoverMdxFiles(rootDir);
   console.log(`  ${pc.green('Found')} ${mdxFiles.length} pages`);
 
-  const themeVars = generateCssVariables(
-    config.theme.darkMode,
-    config.theme.accentColor
-  );
+  const themeVars = generateCssVariables({
+    preset: config.theme.preset,
+    darkMode: config.theme.darkMode,
+    accentColor: config.theme.accentColor,
+    overrides: config.theme.overrides as Parameters<typeof generateCssVariables>[0]['overrides']
+  });
 
   const baseStylesPath = await resolveThemeStylesPath();
   const baseStyles = await Bun.file(baseStylesPath).text();
@@ -106,7 +108,8 @@ export async function build(rootDir: string, config: VoidConfig): Promise<void> 
       config,
       currentPath: page.path,
       pageTitle: page.title,
-      cssContent
+      cssContent,
+      coverpage: config.coverpage
     });
 
     const outputPath =

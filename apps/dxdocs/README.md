@@ -2,7 +2,7 @@
 
 Beautiful documentation sites from MDX. Zero client JavaScript, pure static HTML.
 
-> **Status:** Pre-release (0.1.0). Core build pipeline, dev server, theme system, and all built-in components are implemented.
+> **Status:** Pre-release (0.1.0). Core build pipeline, dev server, theme system, coverpage, footer, icon system, and all built-in components are implemented.
 
 ## Install
 
@@ -32,6 +32,10 @@ Your first documentation page.
 // dxdocs.config.ts
 export default {
   title: 'My Docs',
+  theme: {
+    preset: 'minimal',
+    darkMode: 'dark'
+  },
   navigation: [
     { type: 'page', path: '/', title: 'Home' }
   ]
@@ -56,15 +60,21 @@ Output lands in `./dist/` — deploy to any static host (S3, CloudFront, Vercel,
 
 - **Zero runtime JS** — Pre-rendered static HTML with no framework shipped to the browser
 - **MDX-first** — Markdown with embedded React components, processed at build time
+- **5 theme presets** — Minimal, Catppuccin, Ayu, Nord, Gruvbox (each with light + dark variants)
+- **Coverpage** — Full-viewport hero section with gradient background and CTA buttons
+- **Footer** — Configurable column layout with social icon links
+- **Icon system** — 70+ lucide icons available by name in `<Card>` and `<Icon>` components
+- **Logo support** — Single image or light/dark pair in the header
+- **Prev/next navigation** — Automatic page links at the bottom of each article
 - **Syntax highlighting** — Shiki with 11 language grammars out of the box
 - **Light & dark themes** — Automatic OS preference detection (`prefers-color-scheme`) or forced mode
 - **Table of contents** — Auto-generated from h2/h3 headings with scroll-spy tracking
 - **Live reload** — Dev server (via chokidar) with instant refresh on file changes
 - **Fast builds** — Powered by Bun for sub-second static generation
-- **Built-in components** — Callout, Card, CardGrid, Steps, and Step
+- **Built-in components** — Callout, Card, CardGrid, Steps, Step, Icon
 - **Nested navigation** — Pages and groups with arbitrary nesting depth
 - **Header links** — GitHub and external links with icon support
-- **Custom theming** — Accent color and dark mode strategy via config
+- **Token overrides** — Per-token color customization on top of presets
 - **GFM support** — GitHub Flavored Markdown (tables, strikethrough, task lists) enabled by default
 - **Configurable extensions** — `.md` and `.mdx` by default, extensible
 
@@ -74,11 +84,11 @@ Output lands in `./dist/` — deploy to any static host (S3, CloudFront, Vercel,
 // dxdocs.config.ts
 export default {
   // Site metadata
-  title: 'My Project',           // Default: 'DXDocs'
-  description: 'Project docs',   // Default: ''
-  base: '/',                     // URL base path
-  logo: './logo.svg',            // Optional logo image
-  favicon: './favicon.svg',      // Optional favicon
+  title: 'My Project',
+  description: 'Project docs',
+  base: '/',
+  logo: '/logo.svg',              // or { light, dark, height }
+  favicon: '/favicon.svg',
 
   // Navigation structure (pages and nested groups)
   navigation: [
@@ -88,14 +98,7 @@ export default {
       title: 'Guides',
       items: [
         { type: 'page', path: '/install', title: 'Installation' },
-        { type: 'page', path: '/usage', title: 'Usage' },
-        {
-          type: 'group',
-          title: 'Advanced',
-          items: [
-            { type: 'page', path: '/advanced/theming', title: 'Theming' }
-          ]
-        }
+        { type: 'page', path: '/usage', title: 'Usage' }
       ]
     }
   ],
@@ -106,21 +109,54 @@ export default {
     { label: 'API', href: 'https://api.example.com', icon: 'external' }
   ],
 
-  // Theme configuration
+  // Coverpage (index page hero)
+  coverpage: {
+    title: 'My Project',
+    tagline: 'A concise tagline',
+    description: 'Longer description here.',
+    actions: [
+      { label: 'Get Started', href: '/install', primary: true },
+      { label: 'GitHub', href: 'https://github.com/...' }
+    ],
+    background: 'gradient'
+  },
+
+  // Footer
+  footer: {
+    columns: [
+      {
+        title: 'Resources',
+        links: [
+          { label: 'Docs', href: '/docs' },
+          { label: 'Blog', href: 'https://blog.example.com' }
+        ]
+      }
+    ],
+    copyright: '© 2026 My Project',
+    socials: [
+      { icon: 'github', href: 'https://github.com/...' }
+    ]
+  },
+
+  // Theme
   theme: {
-    accentColor: '#7c3aed',     // CSS color for accent elements
-    darkMode: 'media'           // 'media' (OS preference) | 'light' | 'dark'
+    preset: 'minimal',         // 'minimal' | 'catppuccin' | 'ayu' | 'nord' | 'gruvbox'
+    accentColor: '#6d28d9',    // Optional accent override
+    darkMode: 'media',         // 'media' | 'light' | 'dark'
+    overrides: {               // Optional per-token overrides
+      dark: { bg: '#0a0a0a' }
+    }
   },
 
   // MDX processing
   mdx: {
-    extensions: ['.md', '.mdx'], // File extensions to process
-    gfm: true                    // GitHub Flavored Markdown
+    extensions: ['.md', '.mdx'],
+    gfm: true
   },
 
   // Output
   output: {
-    outDir: './dist'             // Build output directory
+    outDir: './dist'
   }
 };
 ```
@@ -130,6 +166,14 @@ The configuration schema is validated with Zod 4 at load time — invalid config
 ## Built-in Components
 
 All components are available automatically in MDX files without imports.
+
+### Icon
+
+Render any of 70+ lucide icons by name:
+
+```mdx
+<Icon name="terminal" size={24} color="#6d28d9" />
+```
 
 ### Callout
 
@@ -144,14 +188,14 @@ Four variants with icons (via Lucide):
 
 ### Card & CardGrid
 
-Link cards with optional icons, arranged in a responsive grid:
+Link cards with named icons, arranged in a responsive grid:
 
 ```mdx
 <CardGrid>
-  <Card title="Getting Started" href="/getting-started">
+  <Card title="Getting Started" icon="rocket" href="/getting-started">
     Quick setup guide for new users
   </Card>
-  <Card title="API Reference" href="/api">
+  <Card title="API Reference" icon="book-open" href="/api">
     Complete API documentation
   </Card>
 </CardGrid>
@@ -171,6 +215,16 @@ Ordered step-by-step instructions:
 </Steps>
 ```
 
+## Theme Presets
+
+| Preset | Description |
+|--------|-------------|
+| `minimal` | Black/gray/white with purple accent — Mintlify-inspired |
+| `catppuccin` | Latte (light) / Mocha (dark) — pastel palette |
+| `ayu` | Ayu Light / Dark (Mirage) — warm amber tones |
+| `nord` | Snow Storm / Polar Night — frost blues |
+| `gruvbox` | Gruvbox Light / Dark — retro warm palette |
+
 ## CLI
 
 ```bash
@@ -188,7 +242,6 @@ my-project/
 │   └── api/
 │       ├── overview.mdx
 │       └── reference.mdx
-├── public/                     # Static assets (copied to output)
 ├── dxdocs.config.ts            # Site configuration
 └── package.json
 ```
@@ -207,24 +260,25 @@ apps/dxdocs/
 
     mdx/
       compiler.ts         MDX -> React element compilation (via @mdx-js/mdx)
-      components.tsx      Built-in component definitions (Callout, Card, Steps, etc.)
+      components.tsx      Built-in component definitions (Callout, Card, Steps, Icon, etc.)
+      icons.tsx            Lucide icon name-to-component registry
 
     build/
       builder.ts          Static site builder (MDX compile -> React SSR -> HTML)
       dev.ts              Dev server with chokidar file watching
-      shared.ts           Shared utilities (page resolution, asset copying)
+      shared.ts           Shared utilities (page resolution, HTML generation)
 
     theme/
-      layout.tsx          Page layout component (sidebar, TOC, header, content)
-      tokens.ts           CSS custom property generation from config
-      styles.css          Complete theme stylesheet (light + dark)
+      layout.tsx          Page layout component (sidebar, TOC, header, footer, coverpage)
+      tokens.ts           Theme preset registry and CSS custom property generation
+      styles.css          Complete theme stylesheet (coverpage, footer, prev/next, responsive)
 ```
 
 ## Styling
 
 dxdocs uses BEM-style CSS classes prefixed with `void-` (the internal theme name). The theme supports light and dark modes via CSS custom properties and `prefers-color-scheme` media queries.
 
-To customize colors, set `theme.accentColor` in your config. For deeper customization, the generated HTML uses semantic class names that you can override with your own CSS.
+To customize colors, pick a preset and optionally set `theme.accentColor` or `theme.overrides` in your config. For deeper customization, the generated HTML uses semantic class names that you can override with your own CSS.
 
 ## Requirements
 

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import React from 'react';
 import { Info, AlertTriangle, AlertCircle, Lightbulb } from 'lucide-react';
+import { resolveIcon, Icon } from './icons.tsx';
 
 type CalloutVariant = 'info' | 'warning' | 'error' | 'tip';
 
@@ -10,6 +11,8 @@ const calloutIcons: Record<CalloutVariant, ReactNode> = {
   error: <AlertCircle size={18} />,
   tip: <Lightbulb size={18} />
 };
+
+export { Icon };
 
 export function Callout({
   variant = 'info',
@@ -33,13 +36,16 @@ export function Card({
   children
 }: {
   title: string;
-  icon?: ReactNode;
+  icon?: string | ReactNode;
   href?: string;
   children: ReactNode;
 }) {
+  const iconEl =
+    typeof icon === 'string' ? resolveIcon(icon, 20) : icon ?? null;
+
   const inner = (
     <>
-      {icon && <div className="void-card__icon">{icon}</div>}
+      {iconEl && <div className="void-card__icon">{iconEl}</div>}
       <div className="void-card__title">{title}</div>
       <div className="void-card__description">{children}</div>
     </>
