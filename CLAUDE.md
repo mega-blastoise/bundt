@@ -120,13 +120,12 @@ Libraries (`packages/`) may use source-level exports (like hateoas) or compiled 
 
 ### waavy (`packages/waavy`)
 
-- Most complex package — React SSR framework with CLI, server, and build tooling
-- Path aliases: `@/*` -> `./src/*`, `@pkg/config` -> `./config/config.ts`, `@pkg/metadata` -> `./package.json`
+- Source of truth for waavy (standalone `nicholasgalante1997/waavy`, `waavy-rs`, `create-waavy-app` are superseded)
+- **Target architecture and redesign plan: `.claude/specs/waavy/ARCHITECTURE.md`** — read before changing waavy
+- React SSR engine for non-JS backends: CLI (cac) + runtime-agnostic render core + Bun adapters
+- Path aliases: `@/*` -> `./src/*`, `@pkg/config` -> `./config/config.ts`, `@pkg/metadata` -> `./package.json` (to be removed per ARCHITECTURE.md)
 - Has cross-platform executable building (`build/utils/executable.ts`)
-- Server.ts is WIP — uses simplified Bun.serve types with `@ts-expect-error` suppression
-- Known issues documented in `.claude/specs/FAST_FOLLOWS.md` (12 items)
-- Uses both `commander` and `cac` (dual dep to be resolved)
-- Uses both `debug` and `printf` for logging (to be unified)
+- Still uses `debug` and `printf` for logging (to be replaced by console + picocolors)
 
 ### signals (`packages/signals`)
 
