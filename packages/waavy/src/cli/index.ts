@@ -15,12 +15,13 @@ import { type CommandIO, processIO } from '../transport/io';
 import { reportFailure } from '../transport/oneshot';
 import { buildCommand, renderCommand } from './commands';
 import { reportHumanError } from './output';
+import { serveCommand } from './serve-command';
 
 /** Exit code when no command matched (help is printed). */
 const EXIT_USAGE = 2;
 
 /** Commands whose errors must be JSON lines on stderr (machine contract). */
-const JSON_ERROR_COMMANDS = new Set(['render']);
+const JSON_ERROR_COMMANDS = new Set(['render', 'serve']);
 
 /**
  * Runs the CLI.
@@ -58,6 +59,23 @@ export async function runCli(argv: readonly string[], io: CommandIO = processIO(
     .option('--timeout <ms>', 'Render deadline in milliseconds')
     .action(async (flags: Record<string, unknown>) => {
       exitCode = await renderCommand(flags, io);
+    });
+
+  cli
+    .command('serve', 'Serve renders over HTTP (unix socket or TCP)')
+    .option('--release <dir>', 'Release directory produced by `waavy build`')
+    .option('--socket <path>', 'Listen on a unix socket (not on Windows)')
+    .option('--socket-mode <octal>', 'Unix socket permissions (default: 600)')
+    .option('--port <n>', 'Listen on a TCP port (0 picks a free port)')
+    .option('--hostname <host>', 'TCP bind address (default: 127.0.0.1)')
+    .option('--max-body <bytes>', 'Maximum request body size (default: 10 MiB)')
+    .option('--shutdown-timeout <ms>', 'Grace period for in-flight requests on SIGTERM (default: 10000)')
+    .option('--log-level <level>', 'silent | error | info (default: info)')
+    .option('--dev', 'Build from source, serve assets, and rebuild on change')
+    .option('--root <dir>', 'Project root for --dev (default: cwd)')
+    .option('--config <path>', 'Explicit config file for --dev')
+    .action(async (flags: Record<string, unknown>) => {
+      exitCode = await serveCommand(flags, io);
     });
 
   cli.help();

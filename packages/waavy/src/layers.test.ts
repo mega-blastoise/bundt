@@ -3,7 +3,7 @@
  * runtime imports of every source file (type-only imports are erased and
  * therefore not checked).
  *
- *   cli → {transport, build, core} · transport → {runtime, core}
+ *   cli → {transport, build, runtime, core} · transport → {runtime, core}
  *   runtime → core · build → core · browser → core (DOM contract only)
  *   core → nothing outside core except zod
  *
@@ -23,7 +23,7 @@ const INTERNAL_RULES: Readonly<Record<string, readonly string[]>> = {
   build: ['core', 'build'],
   runtime: ['core', 'runtime'],
   transport: ['core', 'runtime', 'transport'],
-  cli: ['core', 'build', 'transport', 'cli'],
+  cli: ['core', 'build', 'runtime', 'transport', 'cli'],
   browser: ['browser', 'core/constants', 'core/data-island'],
   'index.ts': ['core'],
   'server.ts': ['core', 'runtime'],

@@ -39,6 +39,8 @@ export type BuildReleaseOptions = {
   outDir?: string;
   /** Minify and use production React. Defaults to `true`. */
   production?: boolean;
+  /** Re-read the config file even if it was imported before (dev mode). */
+  freshConfig?: boolean;
 };
 
 /** A successfully written release. */
@@ -54,7 +56,11 @@ export type BuiltRelease = {
  * @throws {WaavyError} `CONFIG_INVALID` or `BUILD_FAILED`.
  */
 export async function buildRelease(options: BuildReleaseOptions): Promise<BuiltRelease> {
-  const loaded = await loadConfig({ root: options.root, configPath: options.configPath });
+  const loaded = await loadConfig({
+    root: options.root,
+    configPath: options.configPath,
+    fresh: options.freshConfig ?? false
+  });
   const production = options.production ?? true;
   const buildId = createBuildId();
   const entriesDir = join(loaded.projectRoot, ENTRIES_CACHE_DIR, buildId);

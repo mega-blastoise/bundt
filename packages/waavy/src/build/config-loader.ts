@@ -7,8 +7,8 @@
  * them.
  */
 
-import { stat } from 'node:fs/promises';
-import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { copyFile, rm, stat } from 'node:fs/promises';
+import { basename, dirname, extname, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { parseConfig, type WaavyConfig } from '../core/config';
@@ -42,6 +42,11 @@ export type LoadConfigOptions = {
   root: string;
   /** Explicit config file; relative paths resolve against `root`. */
   configPath?: string;
+  /**
+   * Bypass the module cache so edits to the config file are picked up
+   * (`waavy serve --dev`). Modules the config itself imports stay cached.
+   */
+  fresh?: boolean;
 };
 
 /**
@@ -52,7 +57,7 @@ export type LoadConfigOptions = {
  */
 export async function loadConfig(options: LoadConfigOptions): Promise<LoadedConfig> {
   const configPath = await findConfigFile(options);
-  const config = parseConfig(await importConfig(configPath), configPath);
+  const config = parseConfig(await importConfig(configPath, options.fresh ?? false), configPath);
   const projectRoot = dirname(configPath);
 
   const pages: ResolvedPage[] = [];
@@ -81,17 +86,33 @@ async function findConfigFile(options: LoadConfigOptions): Promise<string> {
   throw new WaavyError('CONFIG_INVALID', `No ${CONFIG_FILE_NAMES.join(' / ')} found in ${root}`);
 }
 
-/** Imports the config module and returns its default export. */
-async function importConfig(configPath: string): Promise<unknown> {
+/**
+ * Imports the config module and returns its default export.
+ *
+ * Bun caches modules by path and ignores query strings, so a `fresh` import
+ * copies the file to a uniquely named sibling (keeping its relative imports
+ * valid), imports the copy, and deletes it.
+ */
+async function importConfig(configPath: string, fresh: boolean): Promise<unknown> {
+  const importPath = fresh ? await freshCopyOf(configPath) : configPath;
   try {
-    const module = (await import(pathToFileURL(configPath).href)) as { default?: unknown };
+    const module = (await import(pathToFileURL(importPath).href)) as { default?: unknown };
     if (module.default === undefined) {
       throw new Error('the config module has no default export');
     }
     return module.default;
   } catch (error) {
     throw new WaavyError('CONFIG_INVALID', `Cannot load ${configPath}: ${describeError(error)}`, { cause: error });
+  } finally {
+    if (importPath !== configPath) await rm(importPath, { force: true });
   }
+}
+
+/** Copies `file` to `.<name>.<uuid><ext>` in the same directory. */
+async function freshCopyOf(file: string): Promise<string> {
+  const copy = join(dirname(file), `.${basename(file, extname(file))}.${crypto.randomUUID()}${extname(file)}`);
+  await copyFile(file, copy);
+  return copy;
 }
 
 async function isFile(path: string): Promise<boolean> {
