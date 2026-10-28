@@ -79,3 +79,59 @@ jobs:
         run: |
           bun run build
           bun run test:e2e
+
+  # crates/waavy against the real compiled waavy binary, plus the Rust-host
+  # (axum) browser test. See .claude/specs/waavy/WAAVY_P2_SERVE_RS.md.
+  waavy-rs:
+    name: waavy Rust client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('crates/**/Cargo.toml') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build waavy binary and fixture release
+        run: scripts/waavy-rs-prepare.sh --env-file >> "$GITHUB_ENV"
+
+      - name: Clippy
+        run: cargo clippy -p waavy --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test -p waavy
+
+      - name: Install Playwright Chromium
+        working-directory: packages/waavy
+        run: bunx playwright install --with-deps chromium
+
+      - name: Rust host browser test (axum)
+        working-directory: packages/waavy
+        env:
+          WAAVY_E2E_AXUM: "1"
+        run: bun test e2e/axum.test.ts

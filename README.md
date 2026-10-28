@@ -43,7 +43,7 @@ Bundt is a unified workspace of independently versioned tools that share a commo
 | Package | Description | Install |
 |---------|-------------|---------|
 | [`@bundt/hateoas`](packages/hateoas) | React HATEOAS framework — hypermedia-driven API clients and server responses for React apps | `bun add @bundt/hateoas` |
-| [`@bundt/waavy`](packages/waavy) | React SSR for non-JavaScript environments — stream server-rendered React to any backend | `bun add @bundt/waavy` |
+| [`@bundt/waavy`](packages/waavy) | React SSR for non-JavaScript backends — render pages from Rust, Python, Go, … via `waavy serve` | `bun add @bundt/waavy` |
 | [`@bundt/signals`](packages/signals) | Signal graph abstractions — fine-grained reactivity primitives | _coming soon_ |
 
 ## Quick Start
@@ -109,24 +109,28 @@ function UserProfile() {
 
 ### Waavy
 
-Server-render React from any backend:
-
-```sh
-bun add @bundt/waavy react react-dom
-```
+Render React pages from any backend — Rust, Python, Go, … — without running
+JavaScript in it. Register pages, build a release, and render with JSON props:
 
 ```ts
-import { renderToStream } from '@bundt/waavy/server';
-
-Bun.serve({
-  async fetch(request) {
-    const stream = await renderToStream(<App url={request.url} />);
-    return new Response(stream, {
-      headers: { 'content-type': 'text/html' },
-    });
-  },
-});
+// waavy.config.ts
+import { defineConfig } from '@bundt/waavy';
+export default defineConfig({ pages: { product: './pages/product.tsx' } });
 ```
+
+```sh
+waavy build                                              # → dist/waavy (release)
+waavy serve --release dist/waavy --socket /run/waavy.sock
+```
+
+```rust
+// Rust host (crates/waavy)
+let page = waavy::Client::unix("/run/waavy.sock")
+    .render(&waavy::RenderRequest::new("product").props(json!({ "name": "Lamp" })))
+    .await?;
+```
+
+See [`packages/waavy`](packages/waavy) and the [host protocol](packages/waavy/docs/PROTOCOL.md).
 
 ## Development
 

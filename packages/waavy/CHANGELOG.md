@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Rewrite of waavy onto the r2 architecture (`.claude/specs/waavy/ARCHITECTURE.md`), Phase 1.
+Rewrite of waavy onto the r2 architecture (`.claude/specs/waavy/ARCHITECTURE.md`), Phases 1–2.
 
 ### Added
+
+- `waavy serve`: warm HTTP renderer on a unix socket or TCP port (`POST /render`, `GET /health`), buffered or streaming responses with detectable truncation on late failures, 413 body limit, request IDs, JSON-lines logs, graceful SIGTERM shutdown, unix socket hygiene.
+- `waavy serve --dev`: builds from source, serves client assets, rebuilds on change, keeps the last good build on failure.
+- Host protocol reference: `docs/PROTOCOL.md`.
+- Rust client crate `waavy` (`crates/waavy`): `Client` (unix socket / TCP, buffered and streaming), one-shot rendering, typed errors; axum example.
 
 - `waavy.config.ts` page registry (`defineConfig`): page ID → module.
 - `waavy build`: self-contained releases (`manifest.json`, bundled `server/entry.js`, hashed `client/` assets with per-page CSS and modulepreload chunks); atomic replacement of the previous release; `--out` override.

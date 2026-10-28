@@ -26,6 +26,11 @@ const STARTUP_TIMEOUT_MS = 15_000;
  * @throws if the process exits or logs an error first.
  */
 export async function startServe(command: readonly string[], args: readonly string[]): Promise<ServeProcess> {
+  // Startup is detected through the `listening` event, which is logged at `info`.
+  const level = args[args.indexOf('--log-level') + 1];
+  if (args.includes('--log-level') && level !== 'info') {
+    throw new Error(`startServe needs --log-level info (got ${level}); quieter levels hide the listening event`);
+  }
   const child = Bun.spawn([...command, 'serve', ...args], { stdin: 'ignore', stdout: 'ignore', stderr: 'pipe' });
   const logs: Array<Record<string, unknown>> = [];
 

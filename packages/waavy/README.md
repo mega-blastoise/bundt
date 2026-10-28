@@ -7,9 +7,10 @@ Waavy isn't a framework. Your backend owns routing, data, auth, and caching;
 waavy turns **a registered page + JSON props** into **HTML plus the matching
 hydration assets**, and gets out of the way.
 
-> Status: `0.3.0-dev` (Phase 1 of the rewrite). One-shot rendering and
-> releases work today. The warm `waavy serve` renderer, the Rust client, and
-> published per-platform binaries are coming in Phases 2–3. Design:
+> Status: `0.3.0-dev` (Phase 2 of the rewrite). Releases, one-shot rendering,
+> the warm `waavy serve` renderer, and the Rust client
+> ([`crates/waavy`](../../crates/waavy)) work today. Published per-platform
+> binaries come in Phase 3. Design:
 > [`.claude/specs/waavy/ARCHITECTURE.md`](../../.claude/specs/waavy/ARCHITECTURE.md).
 
 ## How it works
@@ -106,6 +107,28 @@ Props travel as escaped JSON (never executable script), so hostile strings
 cannot inject markup. `document.head` is inserted verbatim: only pass HTML
 you trust.
 
+## `waavy serve` (warm renderer)
+
+For production, run one long-lived renderer next to your server and talk to
+it over HTTP. A render costs ~0.1 ms of overhead instead of ~40 ms of process
+startup.
+
+```sh
+waavy serve --release dist/waavy --socket /run/waavy.sock   # or --port 4100
+curl --unix-socket /run/waavy.sock -X POST http://localhost/render \
+  -H 'content-type: application/json' -d '{"v":1,"page":"product","props":{"name":"Lamp"}}'
+```
+
+- `POST /render` → `200 text/html` (buffered by default; `"stream": true`
+  streams once the shell is ready), or a JSON error with the status below.
+- `GET /health` → the loaded build.
+- Logs are JSON lines on stderr; SIGTERM drains in-flight requests and exits 0.
+- `waavy serve --dev` builds from source, serves assets, and rebuilds on change.
+
+Rust hosts use [`crates/waavy`](../../crates/waavy). The full contract —
+streaming failure semantics, headers, lifecycle — is in
+[`docs/PROTOCOL.md`](docs/PROTOCOL.md).
+
 ## `waavy render` (one-shot)
 
 ```sh
@@ -114,7 +137,7 @@ waavy render --release <dir> --page <id> [--props <json> | --props-file <path>]
 waavy render --release <dir> --stdin   # full JSON request on stdin
 ```
 
-Request shape (`--stdin`, and the future HTTP API):
+Request shape (`--stdin`, and the HTTP body):
 
 ```json
 { "v": 1, "page": "product", "props": {}, "document": { "title": "…" }, "stream": false, "timeoutMs": 10000 }

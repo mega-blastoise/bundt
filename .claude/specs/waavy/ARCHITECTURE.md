@@ -1,6 +1,6 @@
 # Waavy — Architecture Audit & Target Design
 
-Status: **r2.1** (P1 implemented) · 2026-10-28 · Scope: `packages/waavy` (`@bundt/waavy` 0.2.0)
+Status: **r2.2** (P1–P2 implemented) · 2026-10-28 · Scope: `packages/waavy` (`@bundt/waavy` 0.2.0)
 
 This document is the source of truth for waavy's architecture going forward. It
 supersedes the standalone repos (`nicholasgalante1997/waavy`, `waavy-rs`,
@@ -10,6 +10,10 @@ here.
 
 **Revision log**
 - r1 — initial audit + design.
+- r2.2 (P2 implementation) — HTTP transport on `node:http` (truncation is only
+  signalable there; spikes/P2_SPIKES.md); streaming is a supported mode; `cli`
+  may import `runtime`; measured `serve` overhead 0.13 ms p50, confirming §7
+  (no render cache).
 - r2.1 (P1 implementation) — manifest records `renderDefaults.timeoutMs`;
   page asset paths are relative to `client/`; `waavy build --out`; compiled
   binaries need `--compile-autoload-package-json` (spikes/P1_SPIKES.md S1b);
@@ -135,7 +139,7 @@ compiled-executable approach (hosts need neither Bun nor Node);
 ```
 
 **Dependency rule (enforced by an import-graph test):**
-`cli → {transport, build}`, `transport → runtime`, `runtime → core`,
+`cli → {transport, build, runtime}`, `transport → runtime`, `runtime → core`,
 `build → core`, `browser → core` (types + island reader only). Nothing imports
 `cli`. `core` imports nothing Bun- or Node-specific.
 
