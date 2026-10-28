@@ -10,9 +10,9 @@
 import { chmod } from 'node:fs/promises';
 import { createServer, type Server } from 'node:http';
 
-import { describeError, WaavyError } from '../core/errors';
+import { describeError, toErrorBody, WaavyError } from '../core/errors';
 import type { Logger } from './access-log';
-import { createRequestHandler, type ServedRelease } from './http-handler';
+import { abortConnection, createRequestHandler, type ServedRelease } from './http-handler';
 import { claimSocketPath, releaseSocketPath } from './unix-socket';
 
 /** Default request body limit: 10 MiB of JSON props. */
@@ -73,10 +73,18 @@ export async function startHttpServer(options: HttpServerOptions): Promise<Runni
 
   const server = createServer((request, response) => {
     inFlight++;
-    void handle(request, response).finally(() => {
-      inFlight--;
-      if (inFlight === 0) for (const notify of idleWaiters) notify();
-    });
+    handle(request, response)
+      // The handler reports request failures itself; anything escaping it is
+      // a waavy bug. Contain it to this connection instead of crashing the
+      // process (and every other in-flight render).
+      .catch((error: unknown) => {
+        logger.event('handler_crashed', toErrorBody(error));
+        abortConnection(response);
+      })
+      .finally(() => {
+        inFlight--;
+        if (inFlight === 0) for (const notify of idleWaiters) notify();
+      });
   });
 
   if (listen.kind === 'socket') await claimSocketPath(listen.path);

@@ -172,7 +172,7 @@ const renderStreamed: RenderMode = async (renderer, request, response, signal, l
     }
   } catch (error) {
     log.error = toWaavyError(error).code;
-    response.destroy(error instanceof Error ? error : new Error(String(error)));
+    abortConnection(response);
     return;
   } finally {
     log.recoverable = document.recoverableErrors().length;
@@ -185,7 +185,7 @@ function failRequest(response: ServerResponse, error: unknown, log: RequestLog):
   const body = toErrorBody(error);
   log.error = body.error.code;
   if (response.headersSent) {
-    response.destroy(error instanceof Error ? error : undefined);
+    abortConnection(response);
     return;
   }
   if (response.destroyed) return;
@@ -238,6 +238,19 @@ async function sendAsset(response: ServerResponse, assets: ServedAssets, relativ
 }
 
 /**
+ * Ends a response abnormally so the client sees an incomplete body.
+ *
+ * Destroys the *socket* rather than the response: Bun's
+ * `ServerResponse.destroy()` writes a stray `Connection: close` line into an
+ * open chunked body (spike P2-S1b), whereas closing the socket leaves a plain
+ * truncation that every client reports as an incomplete response.
+ */
+export function abortConnection(response: ServerResponse): void {
+  response.socket?.destroy();
+  response.destroy();
+}
+
+/**
  * Waits for `drain` (or `close`). A client that stops reading for
  * `timeoutMs` gets its connection destroyed; this also bounds the wait when
  * the client has silently disconnected and no event will ever arrive.
@@ -251,7 +264,7 @@ async function drainOrDestroy(response: ServerResponse, timeoutMs: number): Prom
       resolve();
     };
     const timer = setTimeout(() => {
-      response.destroy(new Error(`client did not read for ${timeoutMs}ms`));
+      abortConnection(response);
       done();
     }, timeoutMs);
     response.once('drain', done);
