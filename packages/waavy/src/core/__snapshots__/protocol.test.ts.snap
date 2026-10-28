@@ -1,0 +1,141 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`protocolJsonSchema describes the request and error body 1`] = `
+{
+  "$defs": {
+    "ErrorBody": {
+      "$id": "urn:waavy:protocol:1:ErrorBody",
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "INVALID_REQUEST",
+                "PAGE_NOT_FOUND",
+                "RENDER_FAILED",
+                "RENDER_TIMEOUT",
+                "RELEASE_INVALID",
+                "VERSION_MISMATCH",
+                "BUILD_FAILED",
+                "CONFIG_INVALID",
+                "INTERNAL",
+              ],
+              "type": "string",
+            },
+            "message": {
+              "type": "string",
+            },
+            "page": {
+              "type": "string",
+            },
+          },
+          "required": [
+            "code",
+            "message",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "error",
+      ],
+      "title": "ErrorBody",
+      "type": "object",
+    },
+    "RenderRequest": {
+      "$defs": {
+        "__schema0": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "number",
+            },
+            {
+              "type": "boolean",
+            },
+            {
+              "type": "null",
+            },
+            {
+              "items": {
+                "$ref": "#/$defs/__schema0",
+              },
+              "type": "array",
+            },
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/__schema0",
+              },
+              "propertyNames": {
+                "type": "string",
+              },
+              "type": "object",
+            },
+          ],
+        },
+      },
+      "$id": "urn:waavy:protocol:1:RenderRequest",
+      "additionalProperties": false,
+      "properties": {
+        "document": {
+          "additionalProperties": false,
+          "properties": {
+            "head": {
+              "type": "string",
+            },
+            "lang": {
+              "pattern": "^[A-Za-z0-9-]{1,35}$",
+              "type": "string",
+            },
+            "title": {
+              "type": "string",
+            },
+          },
+          "type": "object",
+        },
+        "page": {
+          "pattern": "^[a-z0-9][a-z0-9_-]*(?:\\/[a-z0-9_-]+)*$",
+          "type": "string",
+        },
+        "props": {
+          "additionalProperties": {
+            "$ref": "#/$defs/__schema0",
+          },
+          "default": {},
+          "propertyNames": {
+            "type": "string",
+          },
+          "type": "object",
+        },
+        "stream": {
+          "default": false,
+          "type": "boolean",
+        },
+        "timeoutMs": {
+          "maximum": 120000,
+          "minimum": 1,
+          "type": "integer",
+        },
+        "v": {
+          "const": 1,
+          "type": "number",
+        },
+      },
+      "required": [
+        "v",
+        "page",
+      ],
+      "title": "RenderRequest",
+      "type": "object",
+    },
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Host protocol version 1. See packages/waavy/docs/PROTOCOL.md.",
+  "protocolVersion": 1,
+  "title": "waavy host protocol",
+}
+`;

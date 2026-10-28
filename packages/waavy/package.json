@@ -1,6 +1,6 @@
 {
   "name": "@bundt/waavy",
-  "version": "0.2.0",
+  "version": "0.3.0-dev.0",
   "type": "module",
   "description": "React SSR for non-JavaScript server environments.",
   "license": "MIT",
@@ -17,44 +17,45 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "bin": {
-    "waavy": "./bin/waavy.js"
-  },
   "keywords": [
     "react",
     "server-rendering",
     "ssr",
+    "hydration",
     "waavy",
     "bun"
   ],
+  "bin": {
+    "waavy": "./bin/waavy.ts"
+  },
   "exports": {
     ".": {
-      "types": "./out/src/exports/server.d.ts",
-      "import": "./out/server.js",
-      "default": "./out/server.js"
-    },
-    "./browser": {
-      "types": "./out/src/exports/browser.d.ts",
-      "import": "./out/browser.js",
-      "default": "./out/browser.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./server": {
-      "types": "./out/src/exports/server.d.ts",
-      "import": "./out/server.js",
-      "default": "./out/server.js"
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js",
+      "default": "./dist/server.js"
     },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js",
+      "default": "./dist/browser.js"
+    },
+    "./entry-server": {
+      "types": "./dist/entry-server.d.ts",
+      "import": "./dist/entry-server.js",
+      "default": "./dist/entry-server.js"
+    },
+    "./protocol.schema.json": "./dist/protocol.schema.json",
     "./package.json": "./package.json"
   },
   "files": [
-    "bin/waavy.js",
-    "bin/lib/",
-    "out/browser.js",
-    "out/browser.js.map",
-    "out/server.js",
-    "out/server.js.map",
-    "out/bun/",
-    "out/src/",
-    "post-install.js",
+    "bin/",
+    "dist/",
+    "README.md",
     "CHANGELOG.md",
     "LICENSE"
   ],
@@ -62,39 +63,34 @@
     "bun": ">=1.3"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "prebuild": "rm -rf dist",
+    "build": "bun run build:bundle && bun run build:types",
+    "build:bundle": "bun build/index.ts",
     "build:types": "tsc -p tsconfig.build.json",
-    "bundle": "NODE_ENV=production bun run build/index.ts --all",
-    "prebuild": "rm -rf out",
-    "build": "bun run typecheck && bun run bundle && bun run build:types",
-    "test": "bun test",
-    "clean": "rm -rf out"
+    "build:binary": "bun build/binary.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun run build:binary && bun test src test",
+    "test:e2e": "bun test e2e",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
-    "cac": "^6.7.14",
-    "debug": "^4.4.1",
+    "cac": "^7.0.0",
     "picocolors": "^1.1.1",
-    "printf": "^0.6.1"
+    "zod": "^4.3.6"
   },
   "peerDependencies": {
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "@tanstack/react-query": "^5.62.3"
-  },
-  "peerDependenciesMeta": {
-    "@tanstack/react-query": {
-      "optional": true
-    }
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@bundt/internal-build-utils": "workspace:*",
+    "@happy-dom/global-registrator": "^21.0.4",
     "@types/bun": "latest",
-    "@types/debug": "^4.1.12",
-    "@types/node": "^25.0.0",
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
-    "@tanstack/react-query": "^5.62.3",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "playwright": "^1.64.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "typescript": "^5.9.0"
   }
 }

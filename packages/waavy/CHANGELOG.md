@@ -7,19 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Rewrite of waavy onto the r2 architecture (`.claude/specs/waavy/ARCHITECTURE.md`), Phase 1.
+
 ### Added
 
-- AbstractWaavyServer
-- WaavyServer
-- Hydra (Hydration)
+- `waavy.config.ts` page registry (`defineConfig`): page ID → module.
+- `waavy build`: self-contained releases (`manifest.json`, bundled `server/entry.js`, hashed `client/` assets with per-page CSS and modulepreload chunks); atomic replacement of the previous release; `--out` override.
+- `waavy render`: one-shot rendering with a JSON-lines stderr contract and stable exit codes; `--stdin` requests, `--props-file`, `--stream`, `--timeout`.
+- Host protocol v1 (`RenderRequest`, `ErrorBody`) with a published JSON Schema (`@bundt/waavy/protocol.schema.json`).
+- Data-island hydration (`<script type="application/json" id="waavy-data">`) with escaped JSON; `@bundt/waavy/browser` `hydrate` used by generated client entries.
+- `@bundt/waavy/server` `createRenderer` for in-process rendering on Bun.
+- Stable error codes (`ERROR_CODES`) shared by exit statuses and HTTP statuses.
+- Compiled single-file binary for the host platform (`bun run build:binary`).
 
-### Fixed
+### Changed
+
+- Render semantics: buffered by default; recoverable Suspense errors and post-shell timeouts are warnings, shell failures are `RENDER_FAILED`/`RENDER_TIMEOUT`.
+- Package exports now point at built `dist/` files; declarations no longer contain path aliases.
 
 ### Removed
 
-### Deprecated
-
-### Security
+- Render cache (`--cache*`), `Hydra`, inline window-assignment hydration scripts, `getServerSideProps`/`getStaticProps` loaders, `bundle`/`ssg`/`prerender` commands (SSG returns in Phase 4), named-export pages, `--pipe`, custom error pages, the TanStack Query extension, `post-install.js` binary download, `debug`/`printf` logging, feature flags.
 
 ## [0.1.6] 07/08/2025
 

@@ -1,6 +1,6 @@
 # Waavy — Architecture Audit & Target Design
 
-Status: **Draft r2 for review** · 2026-10-28 · Scope: `packages/waavy` (`@bundt/waavy` 0.2.0)
+Status: **r2.1** (P1 implemented) · 2026-10-28 · Scope: `packages/waavy` (`@bundt/waavy` 0.2.0)
 
 This document is the source of truth for waavy's architecture going forward. It
 supersedes the standalone repos (`nicholasgalante1997/waavy`, `waavy-rs`,
@@ -10,6 +10,10 @@ here.
 
 **Revision log**
 - r1 — initial audit + design.
+- r2.1 (P1 implementation) — manifest records `renderDefaults.timeoutMs`;
+  page asset paths are relative to `client/`; `waavy build --out`; compiled
+  binaries need `--compile-autoload-package-json` (spikes/P1_SPIKES.md S1b);
+  `RecoverableError.reason` distinguishes deadline aborts.
 - r2 — scope cut after review: host-supplied props are the only data contract
   (no loaders/route discovery); HTML caching deferred; build output becomes a
   self-contained *release*; document ownership specified; buffered rendering

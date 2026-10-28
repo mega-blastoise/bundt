@@ -67,3 +67,15 @@ jobs:
           else
             bun run test
           fi
+
+      # waavy's real-browser hydration tests (packages/waavy/e2e). They need
+      # the package build from the steps above and a Playwright Chromium.
+      - name: Install Playwright Chromium (waavy e2e)
+        working-directory: packages/waavy
+        run: bunx playwright install --with-deps chromium
+
+      - name: Waavy e2e
+        working-directory: packages/waavy
+        run: |
+          bun run build
+          bun run test:e2e

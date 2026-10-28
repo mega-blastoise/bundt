@@ -7,7 +7,8 @@
     "apps/*",
     "packages/*",
     "internal/*",
-    "websites/*"
+    "websites/*",
+    "packages/waavy/fixtures/*"
   ],
   "engines": {
     "bun": ">=1.3"

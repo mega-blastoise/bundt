@@ -122,10 +122,11 @@ Libraries (`packages/`) may use source-level exports (like hateoas) or compiled 
 
 - Source of truth for waavy (standalone `nicholasgalante1997/waavy`, `waavy-rs`, `create-waavy-app` are superseded)
 - **Target architecture and redesign plan: `.claude/specs/waavy/ARCHITECTURE.md`** — read before changing waavy
-- React SSR engine for non-JS backends: CLI (cac) + runtime-agnostic render core + Bun adapters
-- Path aliases: `@/*` -> `./src/*`, `@pkg/config` -> `./config/config.ts`, `@pkg/metadata` -> `./package.json` (to be removed per ARCHITECTURE.md)
-- Has cross-platform executable building (`build/utils/executable.ts`)
-- Still uses `debug` and `printf` for logging (to be replaced by console + picocolors)
+- React SSR engine for non-JS backends: `waavy build` (releases) + `waavy render` (one-shot), cac CLI, compiled binary
+- Layers in `src/`: `core/` (runtime-agnostic) · `build/` · `runtime/` · `transport/` · `cli/` · `browser/`; `src/layers.test.ts` enforces the dependency rules
+- Tests: colocated unit tests in `src/`, integration/CLI contract tests in `test/` (need `bun run build` first), Playwright in `e2e/` (`test:e2e`)
+- Fixture project `packages/waavy/fixtures/basic` is a workspace (root `workspaces` includes `packages/waavy/fixtures/*`)
+- Compiled binaries must keep `--compile-autoload-package-json` (`build/binary.ts`), or user configs can't resolve packages
 
 ### signals (`packages/signals`)
 

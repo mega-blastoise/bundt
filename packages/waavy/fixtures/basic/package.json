@@ -1,0 +1,14 @@
+{
+  "name": "@bundt/waavy-fixture-basic",
+  "private": true,
+  "type": "module",
+  "description": "Fixture project used by @bundt/waavy integration and e2e tests.",
+  "dependencies": {
+    "@bundt/waavy": "workspace:*",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14"
+  }
+}
