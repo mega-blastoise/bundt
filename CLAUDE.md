@@ -128,7 +128,10 @@ Libraries (`packages/`) may use source-level exports (like hateoas) or compiled 
 - Fixture project `packages/waavy/fixtures/basic` is a workspace (root `workspaces` includes `packages/waavy/fixtures/*`)
 - Compiled binaries must keep `--compile-autoload-package-json` (`build/binary.ts`), or user configs can't resolve packages
 - `waavy serve` is built on `node:http`, not `Bun.serve` (only node:http can abort one streaming response); see `transport/http-handler.ts` for Bun node:http workarounds
-- Host protocol contract: `packages/waavy/docs/PROTOCOL.md`; Rust client in `crates/waavy` (`eval "$(scripts/waavy-rs-prepare.sh)" && cargo test -p waavy`)
+- Host protocol contract: `packages/waavy/docs/PROTOCOL.md`; Rust client in `crates/waavy` (`eval "$(scripts/waavy-rs-prepare.sh)" && cargo test -p waavy --all-features`; `Supervisor` behind feature `supervisor`)
+- Distribution: the npm `waavy` command is a Node launcher (`src/launcher/` → `dist/launcher.js`, `bin/waavy.js`) that runs the native binary from optional dependency `@bundt/waavy-<os>-<cpu>` (`packages/waavy/npm/*`, not workspaces); `bun build/binaries.ts` cross-compiles all targets (musl = GitHub release assets only)
+- Versions of the npm package, platform packages and crate move together: `bun scripts/waavy-sync-versions.ts --version X` (+ `WAAVY_VERSION` in `src/core/version.ts`); `test/platform-packages.test.ts` fails on drift
+- Release: push tag `@bundt/waavy@<version>` → `.github/workflows/release-waavy.yml` (generic `release.yml` skips waavy); dry run via workflow_dispatch; `scripts/waavy-install-test.sh` checks a packed install locally
 
 ### signals (`packages/signals`)
 
