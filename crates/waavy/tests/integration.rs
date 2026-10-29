@@ -83,8 +83,12 @@ impl Drop for TempDir {
     }
 }
 
-fn unique() -> u128 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+/// Distinct per call within this process. (A timestamp is not: macOS clocks
+/// tick in microseconds, so parallel tests collided and one test's cleanup
+/// deleted another's socket.)
+fn unique() -> u64 {
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
 }
 
 fn counter(initial: u32) -> RenderRequest {
