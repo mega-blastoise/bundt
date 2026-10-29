@@ -14,6 +14,9 @@ type PackEntry = { path: string; size: number };
 /** Upper bound for the tarball's unpacked size; a binary would be ~60 MB. */
 const MAX_UNPACKED_BYTES = 2_000_000;
 
+/** `npm pack` takes >5 s (bun's default timeout) on slow CI runners. */
+const PACK_TIMEOUT_MS = 60_000;
+
 describe('npm package contents', () => {
   test('ships the launcher, bundles and docs, and no binaries', async () => {
     assertPackageBuilt();
@@ -46,5 +49,5 @@ describe('npm package contents', () => {
     }
     expect(paths.filter((path) => /^(dist\/bin|dist\/release-assets|npm|src|test|fixtures)\//.test(path))).toEqual([]);
     expect(pack?.unpackedSize ?? Infinity).toBeLessThan(MAX_UNPACKED_BYTES);
-  });
+  }, PACK_TIMEOUT_MS);
 });

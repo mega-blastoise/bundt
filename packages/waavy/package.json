@@ -72,7 +72,7 @@
     "build:binary": "bun build/binary.ts",
     "build:binaries": "bun build/binaries.ts",
     "typecheck": "tsc --noEmit",
-    "test": "bun run build:binary && bun test src test",
+    "test": "bun run build:binary && bun test --path-ignore-patterns 'e2e/**'",
     "test:e2e": "bun test e2e",
     "clean": "rm -rf dist"
   },
