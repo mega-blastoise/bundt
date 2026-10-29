@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "@bundt/*@*"
+      # waavy has its own workflow (release-waavy.yml).
+      - "!@bundt/waavy@*"
 
 concurrency:
   group: release-${{ github.ref }}

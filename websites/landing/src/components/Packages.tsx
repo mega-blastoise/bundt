@@ -61,12 +61,11 @@ const packages: Package[] = [
   },
   {
     name: '@bundt/waavy',
-    version: '0.2.0',
-    description: 'React SSR for non-JavaScript server environments. Stream server-rendered React from Rust, Go, Python, or any backend.',
-    tags: ['react', 'ssr', 'polyglot', 'streaming'],
-    href: 'https://github.com/mega-blastoise/bundt',
-    color: 'from-fuchsia-500 to-purple-600',
-    prerelease: true
+    version: '0.3.0',
+    description: 'Render React pages from Rust, Go, Python, or any backend. Native renderer binary, JSON props in, hydrated HTML out.',
+    tags: ['react', 'ssr', 'polyglot', 'rust'],
+    href: 'https://www.npmjs.com/package/@bundt/waavy',
+    color: 'from-fuchsia-500 to-purple-600'
   }
 ];
 

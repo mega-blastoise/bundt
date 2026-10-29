@@ -1,0 +1,25 @@
+{
+  "name": "@bundt/waavy-win32-x64",
+  "version": "0.3.0",
+  "description": "The waavy binary for win32-x64 (experimental). Installed automatically by @bundt/waavy.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mega-blastoise/bundt.git",
+    "directory": "packages/waavy/npm/win32-x64"
+  },
+  "homepage": "https://github.com/mega-blastoise/bundt/tree/main/packages/waavy",
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "bin/"
+  ],
+  "preferUnplugged": true,
+  "publishConfig": {
+    "access": "public"
+  }
+}

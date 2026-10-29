@@ -1,1 +1,0 @@
-export { setupPrerenderAction } from "./setup";
