@@ -1,0 +1,152 @@
+---
+title: Any Language (HTTP)
+description: Call waavy from Python, Go, Ruby or anything else over HTTP or one-shot.
+---
+
+# Any Language
+
+Any language with an HTTP client can be a waavy host: `POST /render` a JSON
+request, get HTML back. Run the renderer next to your server:
+
+```bash
+waavy serve --release dist/waavy --socket /run/waavy.sock   # or --port 4100
+```
+
+The full contract is in the [Host Protocol](/reference/protocol) reference.
+A client needs to handle three outcomes:
+
+1. `200` — the HTML document. Read `Waavy-Recoverable-Errors` if you want to
+   log degraded renders.
+2. Any other status — a JSON body `{"error": {"code", "message", "page"?}}`.
+   Map the code to your own response; the HTTP status waavy used is a
+   sensible default.
+3. Connection refused / socket missing — the renderer is down or restarting.
+   This is the only case worth retrying.
+
+## curl
+
+```bash
+curl --unix-socket /run/waavy.sock -X POST http://localhost/render \
+  -H 'content-type: application/json' \
+  -d '{"v":1,"page":"product","props":{"name":"Desk lamp","price":40},"document":{"title":"Desk lamp"}}'
+```
+
+## Python
+
+Over TCP with the standard library (`waavy serve --port 4100`):
+
+```python
+import json
+import urllib.error
+import urllib.request
+
+def render(page: str, props: dict, title: str | None = None) -> str:
+    body = {"v": 1, "page": page, "props": props}
+    if title is not None:
+        body["document"] = {"title": title}
+    request = urllib.request.Request(
+        "http://127.0.0.1:4100/render",
+        data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            return response.read().decode()
+    except urllib.error.HTTPError as failure:
+        error = json.load(failure)["error"]
+        raise RuntimeError(f"waavy {error['code']}: {error['message']}") from None
+
+html = render("product", {"name": "Desk lamp", "price": 40}, title="Desk lamp")
+```
+
+In Django or Flask, return `html` as the response body and serve the
+release's `client/` directory at `publicPath` with your static files.
+
+## Go
+
+Over a unix socket:
+
+```go
+package waavyclient
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net"
+	"net/http"
+)
+
+var client = &http.Client{Transport: &http.Transport{
+	DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+		var dialer net.Dialer
+		return dialer.DialContext(ctx, "unix", "/run/waavy.sock")
+	},
+}}
+
+type renderError struct {
+	Error struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	} `json:"error"`
+}
+
+func Render(page string, props any) (string, error) {
+	body, err := json.Marshal(map[string]any{"v": 1, "page": page, "props": props})
+	if err != nil {
+		return "", err
+	}
+	response, err := client.Post("http://waavy/render", "application/json", bytes.NewReader(body))
+	if err != nil {
+		return "", err // renderer unreachable: safe to retry
+	}
+	defer response.Body.Close()
+	payload, err := io.ReadAll(response.Body)
+	if err != nil {
+		return "", err
+	}
+	if response.StatusCode != http.StatusOK {
+		var failure renderError
+		_ = json.Unmarshal(payload, &failure)
+		return "", fmt.Errorf("waavy %s: %s", failure.Error.Code, failure.Error.Message)
+	}
+	return string(payload), nil
+}
+```
+
+## One-shot from any language
+
+No server to run: spawn the binary, write the request to stdin, read HTML
+from stdout.
+
+```python
+import json
+import subprocess
+
+result = subprocess.run(
+    ["/opt/shop/waavy", "render", "--release", "/opt/shop/release", "--stdin"],
+    input=json.dumps({"v": 1, "page": "product", "props": {"name": "Desk lamp", "price": 40}}),
+    capture_output=True,
+    text=True,
+)
+if result.returncode != 0:
+    errors = [json.loads(line) for line in result.stderr.splitlines() if line]
+    raise RuntimeError(errors[-1]["error"])
+html = result.stdout
+```
+
+- stdout is only the HTML; stderr is only JSON lines (`{"warning":…}`,
+  `{"error":…}`); the exit status is 0 or the error's exit code.
+- Prefer `--stdin` to `--props`: command lines have size limits and quoting
+  pitfalls.
+- Each run costs ~40 ms of process start-up. Above a handful of renders per
+  second, use `waavy serve`.
+
+## Validating requests
+
+The JSON Schema for requests and error bodies ships in the npm package as
+`@bundt/waavy/protocol.schema.json` (`$defs.RenderRequest`,
+`$defs.ErrorBody`). Use it to generate types or to test your client.

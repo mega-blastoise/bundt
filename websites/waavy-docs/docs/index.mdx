@@ -1,0 +1,63 @@
+---
+title: Introduction
+description: Waavy renders React pages for servers written in any language.
+---
+
+# Waavy
+
+Waavy renders React pages for servers that are not written in JavaScript.
+
+Your backend — Rust, Python, Go, Ruby, Java, PHP — keeps owning routing,
+data, authentication and caching. When it needs a page, it sends waavy a
+**page ID and JSON props** and gets back a **complete HTML document** whose
+JavaScript hydrates it in the browser.
+
+```text
+your server ──{ page: "product", props: {...} }──▶ waavy ──▶ <!doctype html>…
+browser     ──GET /assets/product-3f2a.js──────▶ your server (static files)
+```
+
+Waavy is not a framework. It has no router, no data loaders, no server
+components and no opinion about your backend. It is a renderer with a small,
+stable contract.
+
+## Why waavy
+
+<CardGrid>
+  <Card title="No JavaScript in your server" icon="server" href="/getting-started/concepts">
+    The renderer is a single native binary. Your server talks to it over a unix socket or runs it once per request.
+  </Card>
+  <Card title="Real React, real hydration" icon="zap" href="/guides/pages-and-props">
+    Pages are ordinary React 19 components. Interactive state, effects and Suspense work in the browser.
+  </Card>
+  <Card title="One artifact per deploy" icon="package" href="/guides/deployment">
+    waavy build produces a self-contained release: server bundle, hashed client assets, manifest.
+  </Card>
+  <Card title="A contract, not an SDK" icon="file-text" href="/reference/protocol">
+    A versioned JSON protocol with stable error codes. A Rust crate is included; any HTTP client works.
+  </Card>
+</CardGrid>
+
+## Fast enough to stop thinking about it
+
+| Mode | Overhead per render | Use for |
+|---|---|---|
+| `waavy serve` (warm, unix socket) | ~0.1 ms | production |
+| `waavy render` (one process per render) | ~40 ms | scripts, CI, low traffic |
+
+Numbers are for the small fixture page on an Apple-silicon Mac; your page's
+own render time comes on top.
+
+## Next steps
+
+<Steps>
+  <Step title="Install">
+    Add `@bundt/waavy` to your frontend project — see [Installation](/getting-started/installation).
+  </Step>
+  <Step title="Render your first page">
+    Follow the [Quickstart](/getting-started/quickstart): one page, one build, one render.
+  </Step>
+  <Step title="Connect your backend">
+    Use the [Rust crate](/guides/rust), or call the [HTTP protocol](/guides/any-language) from any language.
+  </Step>
+</Steps>

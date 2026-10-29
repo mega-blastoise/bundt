@@ -1,0 +1,176 @@
+---
+title: Host Protocol
+description: The versioned contract between your server and the waavy renderer (protocol v1).
+---
+
+# Host Protocol (v1)
+
+Everything a host needs to talk to waavy, in any language. The same request
+and error shapes are used by both transports:
+
+| Transport | Start | Per-render overhead | Use when |
+|---|---|---|---|
+| **HTTP** | `waavy serve --release <dir> --socket <path>` (or `--port <n>`) | ~0.1 ms | production |
+| **One-shot** | `waavy render --release <dir> --stdin` | ~40 ms | scripts, CI, low traffic |
+
+A machine-readable JSON Schema ships as `@bundt/waavy/protocol.schema.json`
+(`$defs.RenderRequest`, `$defs.ErrorBody`).
+
+## Request
+
+```json
+{
+  "v": 1,
+  "page": "product",
+  "props": { "name": "Lamp", "price": 40 },
+  "document": { "title": "Lamp", "lang": "en", "head": "<meta name=\"robots\" content=\"noindex\">" },
+  "stream": false,
+  "timeoutMs": 10000
+}
+```
+
+| Field | Required | Meaning |
+|---|---|---|
+| `v` | yes | Protocol version: `1` |
+| `page` | yes | Registered page ID |
+| `props` | no (`{}`) | JSON **object** passed to the page |
+| `document.title` | no | `<title>` text, escaped by waavy |
+| `document.lang` | no (`en`) | `<html lang>`, a BCP 47 tag |
+| `document.head` | no | HTML appended to `<head>` **verbatim** — trusted input only |
+| `stream` | no (`false`) | HTTP only: stream the response |
+| `timeoutMs` | no (release default) | Render deadline, 1–120000 |
+
+Unknown fields are rejected with `INVALID_REQUEST`.
+
+## Success
+
+A complete HTML document:
+
+```html
+<!doctype html><html lang="en"><head>…</head><body>
+<div id="waavy-root">…the page…</div>
+<script type="application/json" id="waavy-data">{"v":1,"page":"…","buildId":"…","props":{…}}</script>
+<script type="module" src="/assets/…"></script>
+</body></html>
+```
+
+Asset URLs start with the release's `publicPath`; **the host serves
+`<release>/client/` there**.
+
+A render can succeed with **recoverable errors** — an error inside a
+`<Suspense>` boundary, or a boundary still pending at the deadline. The
+document is complete and valid; hosts may log the count but must not treat it
+as a failure. If the shell fails, the result is `RENDER_FAILED`; if the shell
+misses the deadline, `RENDER_TIMEOUT`.
+
+## Failure
+
+Always one error body:
+
+```json
+{ "error": { "code": "PAGE_NOT_FOUND", "message": "Page \"x\" is not registered in release …", "page": "x" } }
+```
+
+Codes, exit statuses and HTTP statuses are listed in
+[Error Codes](/reference/errors). Treat unknown codes as failures; new codes
+may be added in minor versions.
+
+## HTTP transport
+
+### POST /render
+
+`Content-Type: application/json` is required.
+
+**Buffered** (default):
+
+- `200 text/html; charset=utf-8` with the full document and headers
+  `Waavy-Build-Id`, `Waavy-Recoverable-Errors`, `Waavy-Request-Id`;
+- otherwise a JSON error body with the status from the table;
+- **a buffered `200` is always the complete, final document.**
+
+**Streaming** (`"stream": true`):
+
+- headers are sent once the shell is ready, then the document is streamed
+  (chunked);
+- shell failures and shell timeouts still return a JSON error body with the
+  right status;
+- after the `200`, the only failure is an **incomplete body**: waavy closes
+  the connection without the chunked terminator, which HTTP clients report as
+  an error while reading the body (curl exit 18, hyper body error, rejected
+  `fetch` body read);
+- **a `200` with an incomplete body is a failure**: abort a forwarded
+  response, discard a collected one;
+- no `Waavy-Recoverable-Errors` header; HTTP trailers are not used.
+
+### GET /health
+
+```json
+{ "ok": true, "buildId": "…", "protocolVersion": 1, "waavyVersion": "0.3.0" }
+```
+
+Any other route returns `404` with `INVALID_REQUEST`. Bodies over
+`--max-body` get `413`.
+
+### Request IDs
+
+An incoming `X-Request-Id` is echoed as `Waavy-Request-Id`; otherwise waavy
+generates one. It appears in the access log.
+
+### Logs
+
+One JSON object per line on stderr:
+
+```json
+{"type":"event","ts":"…","event":"listening","address":"unix:/run/waavy.sock","buildId":"…"}
+{"type":"access","id":"…","method":"POST","path":"/render","page":"product","status":200,"stream":false,"recoverable":0,"ts":"…","ms":1}
+{"type":"event","ts":"…","event":"shutting_down","inFlight":0}
+```
+
+Events: `listening`, `shutting_down`, `stopped`, `dev_build`,
+`dev_build_failed`, `handler_crashed`.
+
+### Lifecycle
+
+- The release is validated before listening: a bad release never accepts
+  connections.
+- Starting on a socket path where a live server answers is refused; a stale
+  socket file is replaced.
+- SIGTERM/SIGINT: stop accepting, finish in-flight requests (up to
+  `--shutdown-timeout`), remove the socket, exit 0. Repeated signals during
+  the drain are ignored.
+- One release per process; deploy a new release by starting a new process.
+
+### Known limitations
+
+- A client disconnect is noticed when waavy next writes, so an abandoned
+  buffered render runs until it finishes or hits its deadline.
+- A streaming client that stops reading for 30 s is disconnected.
+- React may add small inline `<script>` elements inside `#waavy-root` for
+  streamed or deadline-aborted boundaries; a strict CSP must allow them.
+- One process renders on one thread; CPU-heavy pages limit throughput.
+
+## One-shot transport
+
+```bash
+waavy render --release dist/waavy --stdin < request.json
+```
+
+- stdout: the HTML document, nothing else;
+- stderr: JSON lines only — one `{"warning":{"code":"RECOVERABLE_ERROR","page":"…","reason":"error"|"timeout","message":"…"}}`
+  per recoverable error and, on failure, exactly one error body;
+- exit status: 0, or the error's exit code;
+- with `--stream`, discard stdout whenever the exit status is non-zero.
+
+## Rules for clients
+
+- Either connect to a running server or run one-shot. **Never fall back from
+  one to the other** after a failed render — it will fail the same way.
+- Only connection failures are worth retrying.
+- Ignore unknown fields in responses and logs; tolerate unknown error codes.
+
+## Versioning
+
+`v` in the request and `protocolVersion` in `/health` identify this
+document. Breaking changes bump it, and waavy rejects other versions with
+`INVALID_REQUEST`. Adding optional fields, headers, log fields or error codes
+is not breaking.

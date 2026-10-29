@@ -1,0 +1,108 @@
+---
+title: System Overview
+description: Concepts, layers, the dependency rule, and waavy's public surface.
+---
+
+# System Overview
+
+## What waavy is — and isn't
+
+Waavy turns **a registered page + JSON props** into **an HTML document plus
+the matching hydration assets**, for hosts that don't run JavaScript. It is
+deliberately not a framework: no routing, no data loading, no caching, no
+server components. Every feature request should be weighed against that
+scope; the r2 rewrite removed loaders, the render cache, TanStack integration
+and more precisely because they pulled waavy towards being a framework.
+
+## Concepts
+
+- **Page** — a module whose default export is a React component, registered
+  under a page ID in `waavy.config.ts`. The config is the only place a page is
+  defined.
+- **Release** — the output of `waavy build`: `manifest.json`,
+  `server/entry.js` (pages + the project's React), `client/` (hashed assets).
+  Production renders only from a release.
+- **Renderer** — the binary (or `createRenderer` in Bun) with one release
+  loaded.
+- **Host** — the user's backend, speaking the [host protocol](https://github.com/mega-blastoise/bundt/blob/main/packages/waavy/docs/PROTOCOL.md).
+
+## Layers
+
+```text
+                 ┌────────────────────────────────────────────┐
+   host ───────▶ │ transport   one-shot CLI │ HTTP (serve)     │  src/transport/
+                 └─────────────────────┬──────────────────────┘
+                                       ▼
+                 ┌────────────────────────────────────────────┐
+                 │ runtime   open + validate release, dispatch │  src/runtime/
+                 └─────────────────────┬──────────────────────┘
+                                       ▼ calls through the release ABI
+   ┌──────────────────────────┐   ┌────────────────────────────┐
+   │ core (runtime-agnostic)  │◀──│ build (Bun)                │  src/build/
+   │ protocol, errors, render,│   │ Bun.build, entries,        │
+   │ document, data island,   │   │ manifest, release dir      │
+   │ manifest, config schema  │   └────────────────────────────┘
+   └──────────────────────────┘
+        ▲ constants + data island only
+   ┌────┴─────────┐     ┌──────────────────────────────┐
+   │ browser      │     │ launcher (Node, no deps)      │  src/launcher/
+   └──────────────┘     └──────────────────────────────┘
+   cli (cac): build · render · serve                       src/cli/
+```
+
+### The dependency rule
+
+| Layer | May import (internal) | May import (external) |
+|---|---|---|
+| `core` | `core` | `zod` only |
+| `build` | `core`, `build` | anything |
+| `runtime` | `core`, `runtime` | anything |
+| `transport` | `core`, `runtime`, `transport` | anything |
+| `cli` | everything above | anything |
+| `browser` | `browser`, `core/constants`, `core/data-island` | `react`, `react-dom/client` |
+| `launcher` | `launcher` | `node:child_process`, `node:fs`, `node:module`, `node:os` |
+| `entry-server.ts` | `core` | `react`, `react-dom/server` |
+
+Nothing imports `cli`. The rule is enforced by `src/layers.test.ts`, which
+scans the runtime imports of every source file; a new top-level directory
+under `src/` fails that test until it is given rules.
+
+Why it matters:
+
+- `core` runs in three places — the CLI, the release's server bundle, and
+  (partly) the browser — so it can't depend on Bun or Node.
+- `browser` ends up in every page's bundle: importing Zod or server code would
+  bloat or break it.
+- `launcher` runs under plain Node before any native binary exists.
+
+## Public surface
+
+| Entry | Contents | Audience |
+|---|---|---|
+| `@bundt/waavy` | `defineConfig`, `ERROR_CODES`, `PROTOCOL_VERSION`, `WAAVY_VERSION`, protocol types | users |
+| `@bundt/waavy/server` | `createRenderer`, `WaavyError`, `isWaavyError` | Bun hosts |
+| `@bundt/waavy/browser` | `hydrate` | **generated** client entries only |
+| `@bundt/waavy/entry-server` | `defineRelease` | **generated** server entry only |
+| `@bundt/waavy/protocol.schema.json` | JSON Schema of request + error body | any host |
+| `waavy` binary | `build`, `render`, `serve` | everyone |
+
+Every export is a compatibility promise. Keep internals internal; add an
+export only when a real consumer needs it.
+
+## Where each concern lives
+
+| Concern | File(s) |
+|---|---|
+| Error codes, exit/HTTP mapping | `core/errors.ts` |
+| Request schema, JSON Schema generation | `core/protocol.ts` |
+| Deadlines and error classification | `core/render.ts` |
+| Document shell | `core/document.ts` |
+| Data island escaping | `core/data-island.ts` |
+| Manifest schema | `core/manifest.ts` |
+| Release ABI | `core/release-abi.ts`, `entry-server.ts` |
+| Release loading + compatibility | `runtime/release.ts` |
+| Renderer (all transports go through it) | `runtime/renderer.ts` |
+| HTTP semantics | `transport/http-handler.ts` |
+| Listening, shutdown, sockets | `transport/http-server.ts`, `transport/unix-socket.ts` |
+| One-shot I/O contract | `transport/oneshot.ts` |
+| Dev mode | `cli/dev-releases.ts` |

@@ -1,0 +1,142 @@
+---
+title: Rust
+description: Render waavy pages from axum (or any async Rust server) with the waavy crate.
+---
+
+# Rust
+
+```bash
+cargo add waavy --features supervisor
+cargo add serde_json
+```
+
+The crate gives you three ways to reach a renderer:
+
+| | What it does | Use when |
+|---|---|---|
+| `Supervisor` | starts `waavy serve` as a child of your server, restarts it, stops it | you want one process to deploy (unix) |
+| `Client` | connects to a `waavy serve` you run yourself | systemd/sidecar deployments |
+| `oneshot::render` | runs the binary once per render | scripts, very low traffic |
+
+## Supervised renderer
+
+```rust
+use std::time::Duration;
+use waavy::{RenderRequest, Supervisor};
+
+let supervisor = Supervisor::builder()
+    .binary("/opt/shop/waavy")
+    .release("/opt/shop/release")
+    .socket("/run/shop/waavy.sock")
+    .startup_timeout(Duration::from_secs(10))
+    .spawn()          // resolves once the renderer answers /health
+    .await?;
+
+let client = supervisor.client(); // a cheap, cloneable waavy::Client
+
+// … run your server …
+
+supervisor.shutdown().await?;     // SIGTERM, drain, SIGKILL after 15 s
+```
+
+- If the renderer exits unexpectedly, it is restarted with exponential
+  backoff (100 ms up to 5 s). After 10 restarts within a minute the
+  supervisor gives up and `supervisor.status()` is `Status::Failed`.
+- While it restarts, renders fail with `Error::Connect`, which is the one
+  retryable error.
+- If the renderer refuses to start — a broken release, for example — `spawn`
+  returns waavy's own error (`ErrorCode::ReleaseInvalid`, …).
+- The renderer's JSON log lines and the supervisor's events go to
+  `on_event`; by default both are written to your stderr as JSON lines.
+- Dropping the `Supervisor` kills the renderer.
+
+```rust
+let supervisor = Supervisor::builder()
+    .binary(bin).release(release).socket(socket)
+    .arg("--log-level").arg("error")
+    .on_event(|event| match event {
+        waavy::Event::Log(line) => eprintln!("{line}"),
+        other => eprintln!("waavy supervisor: {other:?}"),
+    })
+    .spawn()
+    .await?;
+```
+
+## An axum handler
+
+```rust
+use axum::{extract::{Path, State}, http::StatusCode, response::{Html, IntoResponse, Response}};
+use serde_json::json;
+use waavy::{Client, RenderRequest};
+
+async fn product(State(client): State<Client>, Path(id): Path<u32>) -> Response {
+    let product = load_product(id).await; // your data
+    let request = RenderRequest::new("product")
+        .props(json!({ "name": product.name, "price": product.price }))
+        .title(product.name.clone());
+
+    match client.render(&request).await {
+        Ok(page) => Html(page.html).into_response(),
+        Err(error) => {
+            let status = error
+                .code()
+                .and_then(|code| code.http_status())
+                .and_then(|status| StatusCode::from_u16(status).ok())
+                .unwrap_or(StatusCode::BAD_GATEWAY);
+            tracing::error!(%error, "render failed");
+            (status, "Something went wrong").into_response()
+        }
+    }
+}
+```
+
+Serve the release's assets from the same router:
+
+```rust
+use tower_http::services::ServeDir;
+
+let app = Router::new()
+    .route("/products/{id}", get(product))
+    .nest_service("/assets", ServeDir::new("/opt/shop/release/client"))
+    .with_state(supervisor.client());
+```
+
+A complete, runnable version is
+[`examples/axum.rs`](https://github.com/mega-blastoise/bundt/blob/main/crates/waavy/examples/axum.rs).
+
+## Streaming
+
+```rust
+use futures::StreamExt;
+
+let mut stream = client.render_stream(&RenderRequest::new("feed")).await?;
+while let Some(chunk) = stream.next().await {
+    let bytes = chunk?; // Error::Interrupted here: the document is incomplete, abort your response
+    // forward `bytes`…
+}
+```
+
+`render_stream` resolves once the page shell is ready (or with the error if
+it isn't). See [Suspense and Streaming](/guides/suspense-and-streaming).
+
+## Errors
+
+| Variant | Meaning | Retry? |
+|---|---|---|
+| `Error::Render { code, message, page }` | waavy reported a failure | no |
+| `Error::Interrupted(_)` | a streamed body broke off after `200` | no |
+| `Error::Timeout(_)` | your `Client::with_timeout` elapsed | your call |
+| `Error::Connect(_)` | renderer not reachable | yes — `error.is_retryable()` |
+| `Error::Http`, `Error::Protocol`, `Error::Spawn` | transport problems | no |
+
+Never fall back from `Client` to `oneshot` after a failed render: a render
+that failed fails the same way again.
+
+## One-shot
+
+```rust
+let page = waavy::oneshot::render("/opt/shop/waavy", "/opt/shop/release", &RenderRequest::new("home")).await?;
+```
+
+Each call runs `waavy render --stdin` (about 40 ms). `page.build_id` is
+`None` in this mode.

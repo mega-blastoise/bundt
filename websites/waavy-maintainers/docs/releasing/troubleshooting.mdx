@@ -1,0 +1,68 @@
+---
+title: Release Troubleshooting
+description: Release failures we have seen and how to recover from each.
+---
+
+# Release Troubleshooting
+
+## The workflow failed
+
+**`"<version>" is not a valid version`** in *Resolve version* — the
+dispatch input or tag isn't strict semver (a stray trailing `.` was the real
+case). Re-run with the corrected value.
+
+**`Tag version X does not match packages/waavy/package.json`** — the tag
+points at a commit with a different version. Delete the tag (it published
+nothing), fix the version on `main`, re-tag.
+
+**`waavy versions are out of sync`** in *build* — someone edited a version by
+hand. Run `bun scripts/waavy-sync-versions.ts` and commit.
+
+**A smoke job failed** — nothing was published (publishing needs every
+non-experimental smoke job). Reproduce on that platform; for Linux, Docker on
+a Mac is usually enough (see [Setup](/development/setup#linux-from-a-mac)).
+
+**`publish-npm` failed halfway** — re-run the failed jobs. Already-published
+packages are skipped. Publishing order is platform packages first, so a
+missing main package means users can't install anything yet (good), while a
+missing *platform* package after the main one is out means that platform's
+installs lack a binary.
+
+**`publish-crate` failed** — fix and re-run; it skips a version already on
+crates.io. A crate version can be yanked but never re-published.
+
+## Published, but something is missing
+
+**A version is missing from `npm view` minutes after publishing** — npm's
+CDN and the CLI's metadata cache lag. Query
+`https://registry.npmjs.org/@bundt%2F<name>?t=<now>` directly and install
+with `--prefer-online`.
+
+**One package stays missing long after npm accepted it** — this happened to
+`@bundt/waavy-win32-x64@0.3.0`: the publish log showed
+`+ @bundt/waavy-win32-x64@0.3.0` with a provenance entry, but the registry
+kept listing only an older version while the main package, published after
+it, appeared within minutes. npm appears to hold some large executables for
+review. Do **not** re-publish the same version (npm refuses a version it has
+recorded). Wait, then contact npm support with the package name, the time and
+the sigstore log index from the publish output. If it's never released,
+publish a patch version.
+
+**`latest` points at an old placeholder** — if a package name was reserved
+with a placeholder (e.g. `0.0.0-stage`), make sure the real release took
+`latest`:
+
+```bash
+npm dist-tag ls @bundt/waavy
+npm dist-tag add @bundt/waavy@0.3.0 latest   # needs an npm login with publish rights
+```
+
+## Rolling back
+
+Published versions can't be replaced. To withdraw a bad release:
+
+- npm: `npm deprecate @bundt/waavy@0.3.1 "Broken: use 0.3.2"` (and the
+  platform packages), then publish a fixed patch. `npm unpublish` is limited to
+  72 hours and breaks anyone who installed it — avoid.
+- crates.io: `cargo yank --version 0.3.1 waavy`, then publish a fix.
+- GitHub: edit the release notes to point at the fix; keep the assets.

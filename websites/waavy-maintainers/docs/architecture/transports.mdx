@@ -1,0 +1,104 @@
+---
+title: Transports
+description: The one-shot CLI contract and the waavy serve HTTP server, including Bun node:http workarounds.
+---
+
+# Transports
+
+Both transports go through `createRenderer` (`runtime/renderer.ts`), so
+request validation, page lookup and rendering are identical everywhere. The
+transports only map outcomes onto their medium.
+
+## One-shot (`transport/oneshot.ts`)
+
+- **stdout**: the HTML document and nothing else;
+- **stderr**: JSON lines only — `{"warning":…}` per recoverable error and, on
+  failure, exactly one `{"error":…}`;
+- **exit status**: 0 or `ERROR_CODES[code].exit`.
+
+All output goes through `CommandIO` (`transport/io.ts`) so the CLI is
+testable in-process. The CLI returns exit codes instead of calling
+`process.exit`, so stdout is always flushed (`cli/main.ts` sets
+`process.exitCode`).
+
+`render` and `serve` must keep stderr machine-readable: argument errors from
+cac are converted to `INVALID_REQUEST` JSON lines. `build` reports errors for
+humans.
+
+## HTTP (`waavy serve`)
+
+### Why node:http and not Bun.serve
+
+The streaming contract requires that a failure after `200` produces an
+**incomplete** body. Spike P2-S1 showed every `Bun.serve` variant
+(`controller.error()`, throwing in `pull`, direct streams,
+`Connection: close`) ends the chunked body *cleanly* — indistinguishable from
+success. Only `server.stop(true)` (kills every connection) worked. Bun's
+`node:http` can destroy a single response, so the server is built on it.
+Don't "simplify" back to `Bun.serve` without re-running that spike.
+
+### Bun node:http behaviours to respect
+
+Found during P2 and encoded in `http-handler.ts` / `http-server.ts`:
+
+| Behaviour | Consequence in code |
+|---|---|
+| `ServerResponse.destroy()` writes a stray `Connection: close` into an open chunked body | `abortConnection()` destroys `response.socket` first, leaving a clean truncation |
+| Client disconnects aren't reported until the next write | buffered renders run to their deadline; documented limitation |
+| `end()` after a disconnect never emits `finish`/`close` | never await those events, or requests leak and shutdown waits its full timeout |
+| Responding before reading the request body breaks the connection | oversized bodies are read and discarded (up to 4× the limit) before the `413` |
+| An exception escaping the handler crashes the process | the server catches it, logs `handler_crashed`, destroys only that connection |
+
+Client side, hyper reports truncation in several shapes (unexpected EOF,
+reset, invalid chunk) depending on where the bytes stop; the Rust client maps
+**any** body error after `200` to `Error::Interrupted`.
+
+### Request handling (`http-handler.ts`)
+
+- `POST /render`: `readJsonBody` with the size limit → `renderer.render` or
+  `renderStream` → response headers `Waavy-Build-Id`, `Waavy-Request-Id`, and
+  `Waavy-Recoverable-Errors` (buffered only).
+- Streaming writes respect backpressure: when `write()` returns false, wait
+  for `drain` up to 30 s (`WRITE_STALL_TIMEOUT_MS`), then destroy.
+- `GET /health`; in `--dev`, `GET <publicPath>*` serves assets with path
+  containment.
+- One access log line per request (`transport/access-log.ts`).
+
+### Server lifecycle (`http-server.ts`)
+
+- Tracks in-flight requests; `close()` stops accepting, waits for in-flight
+  requests up to `--shutdown-timeout`, then destroys stragglers.
+- `cli/serve-command.ts` installs SIGTERM/SIGINT handlers **before** the
+  server logs `listening` (a supervisor may signal immediately), and keeps
+  them installed so repeated signals are ignored rather than killing the
+  drain. A terminal Ctrl-C reaches both the npm launcher and the binary, and
+  the launcher forwards its copy too — this was a real exit-130 bug.
+
+### Unix sockets (`unix-socket.ts`)
+
+Before listening, `claimSocketPath` connects to an existing socket file: a
+live answer means another renderer owns it (refuse to start); no answer means
+a stale file (remove it). Sockets are `chmod`ed to `--socket-mode` (600). On
+graceful exit the socket is removed. Windows rejects `--socket`.
+
+### Logging
+
+`createLogger(level, writeLine)` emits JSON lines: `event` lines (`listening`,
+`shutting_down`, `stopped`, `dev_build`, `dev_build_failed`,
+`handler_crashed`) and `access` lines. `--log-level error` only logs failed
+requests — and suppresses `listening`, so tooling that waits for that event
+must use `info` (`test/support/serve.ts` guards against this).
+
+### Performance reference
+
+Fixture `counter` page, compiled binary, unix socket, after warm-up
+(Apple silicon):
+
+| Scenario | p50 | p95 | Throughput |
+|---|---|---|---|
+| sequential | 0.13 ms | 0.67 ms | — |
+| concurrency 8 | 0.48 ms | 2.38 ms | ~11 000 req/s |
+| one-shot | 40.9 ms | 48.2 ms | — |
+
+This is why there is no HTML render cache: hosts can cache responses if
+their pages are expensive.

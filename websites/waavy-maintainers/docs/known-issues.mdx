@@ -1,0 +1,53 @@
+---
+title: Known Issues
+description: Limitations, technical debt and sharp edges, as of 0.3.0.
+---
+
+# Known Issues
+
+## Product limitations (documented for users)
+
+| Issue | Impact | Notes |
+|---|---|---|
+| Client disconnects are noticed only at the next write | abandoned buffered renders run to their deadline | Bun `node:http` limitation; bounded by `timeoutMs` |
+| React inline `<script>` elements for streamed/aborted boundaries | strict CSPs must allow them | CSP nonce support planned |
+| One render thread per process | CPU-heavy pages limit throughput | multi-process `serve` is a candidate feature |
+| Windows: TCP only, experimental | no unix sockets, no Supervisor | |
+| musl binaries need `libstdc++` + `libgcc` | extra `apk add` on Alpine | documented |
+| Dev mode keeps superseded server entries in memory | memory grows over a long dev session | Bun caches modules by path |
+
+## Release and distribution
+
+- **`@bundt/waavy-win32-x64@0.3.0` not visible on the registry** after npm
+  acknowledged the publish (see
+  [Release Troubleshooting](/releasing/troubleshooting#published-but-something-is-missing)).
+  Windows installs of 0.3.0 skip the binary until it appears.
+- **Placeholder versions** (`0.0.0-stage`) exist on the npm package names,
+  published to reserve them. Make sure `latest` never points at them.
+- **`bun.lock` records the platform packages as unresolved** optional
+  dependencies — intentional in the monorepo (development uses
+  `dist/bin/waavy`), and frozen installs pass.
+
+## Code and tests
+
+- **Order-dependent test interaction**: running `src` tests before
+  `test/` in one `bun test` process (path mode) breaks `Bun.build` in later
+  files, likely via happy-dom globals from `hydrate.test.tsx`. The current
+  script order avoids it; isolating happy-dom would remove the hazard.
+- **Repository-wide lint debt**: `eslint .` at the root reports ~146 errors
+  in other packages and older root scripts. waavy and its scripts are clean;
+  keep them that way (lint them directly).
+- **The Rust client opens a connection per call.** Fine over unix sockets;
+  pooling would help TCP hosts at high request rates.
+
+## Documentation drift
+
+`ARCHITECTURE.md` is the design record and predates some implementation
+details. Where they differ, the code wins:
+
+- the server entry exports a `release` object (`ReleaseEntry`), not a
+  `render()` function;
+- the HTTP server is `node:http`, not `Bun.serve`;
+- the source tree has more, smaller modules than §3.4 lists, plus the
+  `launcher` layer;
+- MSRV is 1.85.

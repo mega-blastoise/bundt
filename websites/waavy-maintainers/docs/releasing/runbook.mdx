@@ -1,0 +1,101 @@
+---
+title: Release Runbook
+description: Step-by-step checklist for cutting and verifying a waavy release.
+---
+
+# Release Runbook
+
+Every step that publishes or pushes is outward-facing and irreversible
+(npm and crates.io versions can never be reused). Go in order.
+
+<Steps>
+  <Step title="Prepare the version on a branch">
+
+```bash
+git switch -c release/waavy-0.3.1 main
+bun scripts/waavy-sync-versions.ts --version 0.3.1
+# edit packages/waavy/src/core/version.ts → WAAVY_VERSION = '0.3.1'
+# CHANGELOG.md: move [Unreleased] under "## [0.3.1] - YYYY-MM-DD"
+bun scripts/waavy-sync-versions.ts --check
+```
+
+  </Step>
+  <Step title="Verify locally">
+
+```bash
+(cd packages/waavy && bunx tsc --noEmit && bun run test && bun run test:e2e)
+eval "$(scripts/waavy-rs-prepare.sh)" && cargo test -p waavy --all-features
+cargo publish -p waavy --dry-run --allow-dirty
+scripts/waavy-install-test.sh
+```
+
+  </Step>
+  <Step title="Merge">
+    Open a PR, get CI green (all matrix jobs; Windows may be red), and merge to `main` following the repo's develop → main flow.
+  </Step>
+  <Step title="Dry run on main">
+
+```bash
+gh workflow run release-waavy.yml -R mega-blastoise/bundt -f dry_run=true
+# or exercise the prerelease path:
+gh workflow run release-waavy.yml -R mega-blastoise/bundt -f dry_run=true -f version=0.3.1-rc.0
+gh run watch -R mega-blastoise/bundt
+```
+
+Type the version exactly — a trailing `.` once slipped through to the
+publish step before the workflow validated versions.
+
+  </Step>
+  <Step title="Tag">
+
+```bash
+git switch main && git pull
+git tag @bundt/waavy@0.3.1
+git push origin @bundt/waavy@0.3.1
+gh run watch -R mega-blastoise/bundt
+```
+
+  </Step>
+  <Step title="Verify what was published">
+    Check the registries directly, not just the workflow log (see below).
+  </Step>
+</Steps>
+
+## Post-release verification
+
+```bash
+V=0.3.1
+# npm: every package, bypassing caches
+for p in waavy waavy-darwin-arm64 waavy-darwin-x64 waavy-linux-x64 waavy-linux-arm64 waavy-win32-x64; do
+  printf '%-26s ' "@bundt/$p"
+  curl -s "https://registry.npmjs.org/@bundt%2F$p?t=$(date +%s)" | \
+    python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["dist-tags"]["latest"], "'$V'" in d["versions"])'
+done
+
+# crates.io
+curl -s -H 'User-Agent: waavy-release-check' https://crates.io/api/v1/crates/waavy | \
+  python3 -c 'import json,sys; print(json.load(sys.stdin)["crate"]["max_version"])'
+
+# GitHub release assets
+gh release view "@bundt/waavy@$V" -R mega-blastoise/bundt --json assets -q '.assets[].name'
+
+# A real install from the registry
+dir=$(mktemp -d) && cd "$dir" && npm init -y >/dev/null && \
+  npm i --prefer-online @bundt/waavy@$V react react-dom && npx waavy --version
+```
+
+Expected: six npm packages at the new version with `latest` pointing at it
+(or `next` for prereleases), the crate's max version, seven archives plus
+`SHA256SUMS`, and `waavy/<version>` from the install.
+
+npm can take several minutes to show a new version, and the CLI caches
+metadata — use `--prefer-online` and query the registry URL with a cache
+buster. If one package is still missing much later, see
+[Release Troubleshooting](/releasing/troubleshooting).
+
+## After the release
+
+- Announce: README status lines, the landing page version, the docs sites.
+- `bun install` and commit `bun.lock` if it changed.
+- Move any follow-ups discovered during the release into
+  [Known Issues](/known-issues).

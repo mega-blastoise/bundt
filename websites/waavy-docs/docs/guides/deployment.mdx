@@ -1,0 +1,147 @@
+---
+title: Deployment
+description: Build in CI, ship a release and a binary, run the renderer, serve the assets.
+---
+
+# Deployment
+
+A waavy deployment is three things next to your server:
+
+1. a **release directory** (`dist/waavy/`, from `waavy build`);
+2. the **`waavy` binary** for the server's platform;
+3. a **static route** serving `<release>/client/` at `publicPath`.
+
+Your production servers need neither Node nor Bun.
+
+<Steps>
+  <Step title="Build the release in CI">
+
+```bash
+npm ci
+npx waavy build                # → dist/waavy
+```
+
+The release bundles your pages *and React* into `server/entry.js`, so the
+release is complete without `node_modules`.
+
+  </Step>
+  <Step title="Pick up the binary">
+
+From the install, for the platform you build on:
+
+```bash
+cp node_modules/@bundt/waavy-linux-x64/bin/waavy ./waavy
+```
+
+…or download the asset for your **server's** platform from the
+[GitHub release](https://github.com/mega-blastoise/bundt/releases) (needed if
+CI and servers differ, and for Alpine/musl). Use the same waavy version that
+built the release.
+
+  </Step>
+  <Step title="Run the renderer">
+
+```bash
+./waavy serve --release dist/waavy --socket /run/waavy/waavy.sock
+```
+
+It validates the release before listening, logs JSON lines on stderr, and on
+SIGTERM finishes in-flight renders, removes its socket and exits 0.
+
+  </Step>
+  <Step title="Serve the assets">
+
+Serve `dist/waavy/client/` at `publicPath` (default `/assets/`), or upload it
+to a CDN and set `publicPath` to the CDN URL before building:
+
+```ts
+export default defineConfig({
+  pages: { product: './pages/product.tsx' },
+  publicPath: 'https://cdn.example.com/shop/'
+});
+```
+
+Asset names are content-hashed: send
+`Cache-Control: public, max-age=31536000, immutable`.
+
+  </Step>
+</Steps>
+
+## systemd
+
+```text
+# /etc/systemd/system/waavy.service
+[Unit]
+Description=waavy renderer
+After=network.target
+
+[Service]
+ExecStart=/opt/shop/waavy serve --release /opt/shop/release --socket /run/waavy/waavy.sock
+RuntimeDirectory=waavy
+User=shop
+Restart=on-failure
+# waavy drains for up to --shutdown-timeout (10 s) after SIGTERM
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target
+```
+
+The socket is created with mode `0600`, owned by the service user: run your
+server as the same user, or pass `--socket-mode 660` and share a group.
+
+## Containers
+
+```text
+# Dockerfile
+FROM node:22-bookworm AS frontend
+WORKDIR /app
+COPY frontend/ .
+RUN npm ci && npx waavy build
+
+FROM debian:bookworm-slim
+COPY --from=frontend /app/dist/waavy /srv/release
+COPY --from=frontend /app/node_modules/@bundt/waavy-linux-x64/bin/waavy /usr/local/bin/waavy
+# …your server binary, and a static route for /srv/release/client
+```
+
+Run the renderer as a sidecar sharing a volume for the socket, or as a second
+process in the same container. On Alpine, use the musl release asset and
+`apk add libstdc++ libgcc`.
+
+From Rust, the [Supervisor](/guides/rust#supervised-renderer) can start and
+restart the renderer as a child of your server, so there is only one process
+to deploy.
+
+## Health checks
+
+`GET /health` answers once the release is loaded:
+
+```json
+{ "ok": true, "buildId": "mvt3np0x-7feaec", "protocolVersion": 1, "waavyVersion": "0.3.0" }
+```
+
+## Rolling out a new release
+
+One process serves one release. To deploy:
+
+1. build the new release into a new directory;
+2. start a renderer on it, on a new socket (or port);
+3. wait for `/health`, then switch your server to the new socket;
+4. send SIGTERM to the old renderer.
+
+Keep the previous release's `client/` files available for a while: browsers
+that loaded the old HTML still fetch the old assets. Since names are hashed,
+copying every release's `client/` into one asset directory (or bucket) is
+safe.
+
+Every response carries the release's build ID (`Waavy-Build-Id` header,
+`buildId` in `/health` and in the page's data island), so you can tell which
+release served a page.
+
+## Security
+
+- waavy has **no authentication**. Prefer a unix socket; on TCP keep the
+  default `--hostname 127.0.0.1` or a private network.
+- `document.head` is inserted verbatim: never put user input in it.
+- Props are escaped safely into the page, but they are visible to the user.

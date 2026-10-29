@@ -1,0 +1,39 @@
+---
+title: Roadmap
+description: What's planned after 0.3.0, and what is deliberately out of scope.
+---
+
+# Roadmap
+
+## Next: static site generation (P4)
+
+Specified in `.claude/specs/waavy/WAAVY_P4_SSG.md`, kickoff prompt in
+`WAAVY_P4_PROMPT.md`. `waavy ssg` renders an explicit list of
+`{ page, path, props, document }` jobs through the same renderer as
+`render`/`serve` and writes a static site whose pages hydrate.
+
+- jobs from a JSON file or an `ssg.jobs` function in `waavy.config.ts`;
+- buffered rendering only, same shell and data island;
+- atomic output: any failed job fails the command and writes nothing;
+- out of scope: incremental builds, sitemaps, i18n, redirects, file-system
+  routing.
+
+Target: 0.4.0.
+
+## Candidates
+
+| Item | Why | Notes |
+|---|---|---|
+| Fragment mode (D9) | Rails/Django/Phoenix hosts want to embed pages in their own templates | return container + island + scripts, head assets separately; needs its own contract and tests |
+| CSP nonce | strict CSPs vs React's inline scripts | a `document.nonce` request field (additive) |
+| Connection pooling in the Rust client | TCP hosts at high request rates | measure first |
+| Multi-process `serve` | CPU-bound pages | likely a supervisor concern, not the renderer's |
+| Windows promotion | currently experimental | see [Adding a Platform](/runbooks/adding-a-platform#promoting-experimental-supported) |
+| Sunset of the standalone repos | `waavy`, `waavy-rs`, `create-waavy-app` | README pointers, close PRs, archive; `npm deprecate waavy` |
+
+## Out of scope (by design)
+
+Routing, data loading, render caching, React Server Components, and
+framework integrations inside waavy. These belong to the host. Revisit only
+with evidence from real users, and record the decision in the
+[Decision Log](/architecture/decisions).

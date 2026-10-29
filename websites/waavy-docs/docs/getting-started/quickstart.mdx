@@ -1,0 +1,120 @@
+---
+title: Quickstart
+description: Register a page, build a release, render it, and see it hydrate.
+---
+
+# Quickstart
+
+In five minutes: one interactive page, rendered by the `waavy` binary and
+hydrated in a browser.
+
+<Steps>
+  <Step title="Create a project">
+
+```bash
+mkdir shop-frontend && cd shop-frontend
+npm init -y
+npm install @bundt/waavy react react-dom
+```
+
+  </Step>
+  <Step title="Write a page">
+
+A page is a module whose **default export** is a React component. Its props
+come from your server as JSON.
+
+```tsx
+// pages/product.tsx
+import { useState } from 'react';
+
+type ProductProps = { name: string; price: number };
+
+export default function Product({ name, price }: ProductProps) {
+  const [quantity, setQuantity] = useState(1);
+  return (
+    <main>
+      <h1>{name}</h1>
+      <button onClick={() => setQuantity(quantity + 1)}>
+        Add one — {quantity} × ${price}
+      </button>
+    </main>
+  );
+}
+```
+
+  </Step>
+  <Step title="Register it">
+
+```ts
+// waavy.config.ts
+import { defineConfig } from '@bundt/waavy';
+
+export default defineConfig({
+  pages: {
+    product: './pages/product.tsx'
+  },
+  publicPath: '/assets/',
+  outDir: './dist/waavy'
+});
+```
+
+  </Step>
+  <Step title="Build a release">
+
+```bash
+npx waavy build
+# built release mvtsv8bd-1430e7 (1 page) → …/dist/waavy
+```
+
+  </Step>
+  <Step title="Render it">
+
+```bash
+npx waavy render --release dist/waavy --page product \
+  --props '{"name":"Desk lamp","price":40}' --title "Desk lamp" > product.html
+```
+
+`product.html` is a complete document: your component inside
+`#waavy-root`, the props in a JSON data island, and a script tag pointing at
+`/assets/…`.
+
+  </Step>
+  <Step title="See it hydrate">
+
+The HTML expects its assets at `publicPath` (`/assets/`). Put both in one
+folder and serve it with any static server:
+
+```bash
+mkdir -p site/assets
+cp -R dist/waavy/client/. site/assets/
+cp product.html site/index.html
+python3 -m http.server -d site 8000     # open http://localhost:8000
+```
+
+Click the button: the count changes, so the page hydrated. In a real
+deployment your backend renders the HTML per request and serves
+`dist/waavy/client/` at `/assets/` — the host guides show how.
+
+  </Step>
+</Steps>
+
+## What you just built
+
+```text
+dist/waavy/
+├── manifest.json          what's in the release, and for which waavy
+├── server/entry.js        your pages + React, bundled for the renderer
+└── client/                hashed browser assets — your server serves these at /assets/
+    └── product-vydxt1t0.js  (+ CSS and shared chunks/ when pages have them)
+```
+
+The release directory is your deployment artifact. Next:
+
+<CardGrid>
+  <Card title="Core concepts" icon="lightbulb" href="/getting-started/concepts">
+    Pages, releases, the document shell and the host protocol in one page.
+  </Card>
+  <Card title="Connect a Rust server" icon="code" href="/guides/rust">
+    axum + the waavy crate, with a supervised renderer.
+  </Card>
+</CardGrid>

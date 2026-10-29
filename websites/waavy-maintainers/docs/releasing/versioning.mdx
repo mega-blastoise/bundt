@@ -1,0 +1,66 @@
+---
+title: Versioning
+description: How waavy versions the packages, the crate, and the contracts.
+---
+
+# Versioning
+
+## Package versions: lockstep
+
+`@bundt/waavy`, the five `@bundt/waavy-<os>-<cpu>` packages, and the `waavy`
+crate always carry **the same version**. The main package pins its platform
+packages exactly (no ranges), so the launcher can assume the binary matches
+the JavaScript it was installed with.
+
+Semver while on 0.x:
+
+- **patch** (0.3.1) — fixes, no contract changes;
+- **minor** (0.4.0) — new features, *or* any change that bumps an integer
+  contract version (see below);
+- prereleases (`0.4.0-rc.0`) publish to npm's `next` dist-tag and are marked
+  as GitHub prereleases.
+
+## Contract versions: integers
+
+Separate from the package version, four integers describe compatibility.
+Bump one only when its contract changes incompatibly:
+
+| Constant | File | Covers |
+|---|---|---|
+| `PROTOCOL_VERSION` | `core/protocol.ts` | the request/response/error contract with hosts (`v` in requests) |
+| `RELEASE_ABI_VERSION` | `core/release-abi.ts` | the `release` export of `server/entry.js` |
+| `MANIFEST_VERSION` | `core/manifest.ts` | `manifest.json` |
+| (JSON Schema `$id`s) | generated | `urn:waavy:protocol:<v>:<Name>` follows the protocol version |
+
+A runtime only serves releases whose manifest, ABI and protocol versions
+equal its own (`VERSION_MISMATCH` otherwise); `waavyVersion` isn't compared.
+So, as long as these integers stay put, users can upgrade the binary without
+rebuilding releases.
+
+Additive changes — new optional request fields, new headers, new log fields,
+new error codes — are **not** breaking. Clients are required to ignore unknown
+fields and tolerate unknown codes.
+
+## Bumping the version
+
+```bash
+bun scripts/waavy-sync-versions.ts --version 0.3.1
+# then update the literal in packages/waavy/src/core/version.ts:
+#   export const WAAVY_VERSION = '0.3.1';
+bun scripts/waavy-sync-versions.ts --check
+(cd packages/waavy && bun test src/core/version.test.ts test/platform-packages.test.ts)
+```
+
+The sync script rewrites `packages/waavy/package.json` (version +
+`optionalDependencies`), every `npm/*/package.json`, and the `[package]`
+version in `crates/waavy/Cargo.toml`. `WAAVY_VERSION` is left to you on
+purpose: its test fails until it matches.
+
+Then move the `## [Unreleased]` entries in `packages/waavy/CHANGELOG.md` under
+`## [x.y.z] - YYYY-MM-DD`. The release workflow uses that section as the
+GitHub release notes.
+
+## Tags
+
+One tag per release: `@bundt/waavy@<version>`. The generic `release.yml`
+ignores these tags (`!@bundt/waavy@*`); `release-waavy.yml` owns them.

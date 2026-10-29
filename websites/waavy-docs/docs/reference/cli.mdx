@@ -1,0 +1,96 @@
+---
+title: CLI
+description: Every waavy command and flag.
+---
+
+# CLI
+
+```text
+waavy build    Build a release from waavy.config.*
+waavy render   Render one page to stdout
+waavy serve    Serve renders over HTTP (unix socket or TCP)
+waavy --version | --help
+```
+
+Through npm the command is `npx waavy …` / `bunx waavy …`; on servers, run the
+binary directly.
+
+## waavy build
+
+```bash
+waavy build [--root <dir>] [--config <path>] [--out <dir>] [--no-minify]
+```
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--root <dir>` | current directory | Directory containing `waavy.config.*` |
+| `--config <path>` | `waavy.config.*` in root | Explicit config file |
+| `--out <dir>` | config `outDir` | Release output directory |
+| `--no-minify` | minify on | Skip minification and use React development builds |
+
+The previous release at the output path is replaced only after the new build
+succeeds. Failures exit with `CONFIG_INVALID` (41) or `BUILD_FAILED` (40) and a
+human-readable message.
+
+## waavy render
+
+```bash
+waavy render --release <dir> --page <id> [--props <json> | --props-file <path>]
+             [--title <text>] [--lang <tag>] [--head <html>] [--stream] [--timeout <ms>]
+waavy render --release <dir> --stdin
+```
+
+| Flag | Meaning |
+|---|---|
+| `--release <dir>` | Release directory (required) |
+| `--page <id>` | Registered page ID |
+| `--props <json>` | Props as a JSON object |
+| `--props-file <path>` | Read props from a JSON file |
+| `--stdin` | Read a complete [render request](/reference/protocol#request) from stdin (other request flags not allowed) |
+| `--title <text>` | Document title |
+| `--lang <tag>` | `<html lang>`, default `en` |
+| `--head <html>` | Trusted HTML appended to `<head>` |
+| `--stream` | Write HTML as it renders |
+| `--timeout <ms>` | Render deadline, 1–120000 (default: the release's) |
+
+Output contract:
+
+- **stdout** — the HTML document and nothing else;
+- **stderr** — JSON lines only: one `{"warning":{…}}` per recoverable error,
+  and on failure exactly one `{"error":{"code","message","page"?}}`;
+- **exit status** — 0, or the error's [exit code](/reference/errors).
+
+With `--stream`, discard stdout whenever the exit status is non-zero.
+
+## waavy serve
+
+```bash
+waavy serve --release <dir> (--socket <path> | --port <n>) [options]
+waavy serve --dev [--root <dir>] [--config <path>] (--socket <path> | --port <n>)
+```
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--release <dir>` | — | Release to serve (not with `--dev`) |
+| `--socket <path>` | — | Listen on a unix socket (not on Windows) |
+| `--port <n>` | — | Listen on TCP; `0` picks a free port (see the `listening` log event) |
+| `--hostname <host>` | `127.0.0.1` | TCP bind address |
+| `--socket-mode <octal>` | `600` | Socket file permissions |
+| `--max-body <bytes>` | 10 MiB | Larger request bodies get `413` |
+| `--shutdown-timeout <ms>` | `10000` | How long SIGTERM/SIGINT waits for in-flight requests |
+| `--log-level <level>` | `info` | `silent`, `error` (failed requests only), `info` |
+| `--dev` | off | Build from source, serve assets, rebuild on change |
+| `--root <dir>`, `--config <path>` | — | Project location for `--dev` |
+
+Exactly one of `--socket` and `--port` is required. Startup failures print
+one `{"error":…}` line on stderr and exit with the error's code, for example
+30 for an invalid release.
+
+Endpoints and log lines are described in the
+[Host Protocol](/reference/protocol#http-transport).
+
+## Environment
+
+| Variable | Used by | Meaning |
+|---|---|---|
+| `WAAVY_BINARY_PATH` | the npm launcher | Run this binary instead of the platform package's |

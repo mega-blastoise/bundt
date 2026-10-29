@@ -254,6 +254,9 @@ const { html, recoverableErrors } = await renderer.render({ v: 1, page: 'product
 
 ## Development
 
+Full guides: the user docs site (`websites/waavy-docs`) and the maintainer
+guide (`websites/waavy-maintainers`) — `bun run dev` in either directory.
+
 ```sh
 bun run build          # dist/ (library bundles, declarations, protocol schema)
 bun run build:binary   # dist/bin/waavy for this platform

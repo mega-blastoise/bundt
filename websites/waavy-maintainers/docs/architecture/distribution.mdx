@@ -1,0 +1,104 @@
+---
+title: Distribution
+description: Compiled binaries, platform packages, the npm launcher, and version sync.
+---
+
+# Distribution
+
+## The compiled binary
+
+`build/binary.ts` exports `compileBinary({ outfile, bunTarget? })`, which
+runs:
+
+```bash
+bun build --compile --minify --compile-autoload-package-json --compile-autoload-tsconfig \
+  src/cli/main.ts --outfile <outfile> [--target=<bun-target>]
+```
+
+<Callout variant="error">
+Never drop `--compile-autoload-package-json` (exported as `COMPILE_FLAGS`). Compiled Bun executables otherwise ignore `package.json` at runtime, so `waavy build` cannot resolve `@bundt/waavy` (or any package's `exports`) when importing the user's `waavy.config.ts`. A CLI test guards this. `.env` and `bunfig.toml` autoloading stay off so behaviour doesn't depend on the working directory.
+</Callout>
+
+The CLI never imports React (releases bundle their own), so the binary is
+self-contained. It embeds the Bun runtime: ~61 MB (macOS arm64) to ~104 MB
+(linux-x64).
+
+- `bun run build:binary` → `dist/bin/waavy` for the host (tests, local use).
+- `bun run build:binaries` → every distribution target (`build/binaries.ts`,
+  `--target <name>` repeatable, `--host-only`). Bun downloads foreign
+  runtimes on first use; all seven targets cross-compile from any host in
+  ~15 s.
+
+## Targets (`build/targets.ts`)
+
+| Asset name | Bun target | Output |
+|---|---|---|
+| `darwin-arm64` | `bun-darwin-arm64` | `npm/darwin-arm64/bin/waavy` |
+| `darwin-x64` | `bun-darwin-x64` | `npm/darwin-x64/bin/waavy` |
+| `linux-x64` | `bun-linux-x64-baseline` | `npm/linux-x64/bin/waavy` |
+| `linux-arm64` | `bun-linux-arm64` | `npm/linux-arm64/bin/waavy` |
+| `win32-x64` | `bun-windows-x64` | `npm/win32-x64/bin/waavy.exe` |
+| `linux-x64-musl` | `bun-linux-x64-musl` | `dist/release-assets/linux-x64-musl/waavy` |
+| `linux-arm64-musl` | `bun-linux-arm64-musl` | `dist/release-assets/linux-arm64-musl/waavy` |
+
+- `linux-x64` uses Bun's **baseline** build (no AVX2) for old CPUs and
+  emulators.
+- **musl is release-asset only** (D15): npm's `os`/`cpu` fields can't select
+  by libc. musl binaries need `libstdc++` and `libgcc` at runtime.
+
+## Platform packages (`npm/<os>-<cpu>/`)
+
+Each is a committed `package.json` plus gitignored `bin/` and `LICENSE`
+(copied in by `binaries.ts`). They are **not** workspaces.
+
+The manifests are **generated**, never hand-edited: `src/launcher/platforms.ts`
+(`NPM_PLATFORMS`) is the single table, `build/platform-packages.ts` derives
+each manifest (`os`, `cpu`, `files: ["bin/"]`, `preferUnplugged`,
+`publishConfig.access: public`), and the main package's
+`optionalDependencies` pin every platform package to the **exact** same
+version.
+
+## The launcher (`src/launcher/`)
+
+`bin/waavy.js` is a four-line shim importing `dist/launcher.js` (bundled for
+Node from `src/launcher/main.ts`, no dependencies).
+
+1. **Resolve** (`resolve.ts`): `WAAVY_BINARY_PATH` if set (must exist) →
+   `@bundt/waavy-<platform>-<arch>/bin/waavy[.exe]` via
+   `createRequire(import.meta.url).resolve` (works with npm, pnpm, Bun, hoisted
+   or isolated installs) → otherwise a `BinaryNotFoundError` whose message
+   lists supported platforms and the `--omit=optional` cause.
+2. **Run** (`run.ts`): `spawn` with `stdio: 'inherit'`; forward SIGINT,
+   SIGTERM, SIGHUP; exit with the child's code or `128 + signal`.
+3. **Exit codes**: 127 when no binary is found, 126 when spawning fails.
+
+Hosts in other languages should run the binary directly, not the launcher.
+
+## Version sync (`build/version-sync.ts`)
+
+`planVersionSync(version?)` computes the desired contents of every
+version-carrying file without writing:
+
+- `packages/waavy/package.json` — `version`, `optionalDependencies`;
+- `packages/waavy/npm/*/package.json` — whole manifests;
+- `crates/waavy/Cargo.toml` — the `[package]` version only.
+
+Used by `scripts/waavy-sync-versions.ts` (write, or `--check`), by the
+release workflow, and by `test/platform-packages.test.ts` (fails on drift).
+`WAAVY_VERSION` in `src/core/version.ts` is intentionally left out: it's a
+literal with its own test against `package.json`, so a forgotten bump fails
+`bun test`.
+
+## The npm tarball
+
+`files` includes `dist/` but excludes `dist/bin/` and
+`dist/release-assets/`. The tarball is ~135 kB (466 kB unpacked, 116 files);
+`test/package-contents.test.ts` asserts required files are present, no
+binaries or sources are included, and the unpacked size stays under 2 MB.
+
+## Release assets (`build/release-assets.ts`)
+
+For every target: `waavy-<asset>.tar.gz` (`.zip` for Windows) containing the
+executable and `LICENSE` at the archive root, plus `SHA256SUMS` in
+`sha256sum -c` format. Names carry no version so
+`releases/latest/download/…` URLs stay stable.

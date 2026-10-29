@@ -1,0 +1,106 @@
+---
+title: Rust Crate
+description: Internals of crates/waavy — client, error mapping, one-shot and Supervisor.
+---
+
+# Rust Crate (`crates/waavy`)
+
+## Layout
+
+```text
+src/
+├── lib.rs              re-exports; crate docs
+├── protocol.rs         RenderRequest builder, ErrorCode (+ Unknown), ErrorBody, Health
+├── error.rs            Error enum, is_retryable, body-error mapping
+├── client.rs           Client (unix/TCP), Rendered, RenderStream
+├── oneshot.rs          feature "oneshot": spawn `waavy render --stdin`
+└── supervisor/         feature "supervisor" (unix)
+    ├── mod.rs          public API, background supervision task
+    ├── policy.rs       pure restart policy (unit-tested)
+    └── process.rs      spawn, stderr pump, readiness, terminate
+tests/
+├── client_mock.rs      against a hand-written hyper server (truncation, errors, timeouts)
+├── schema.rs           serialized types validate against protocol.schema.json
+├── integration.rs      against the real binary + fixture release
+└── supervisor.rs       Supervisor against the real binary
+examples/axum.rs        reference host
+```
+
+## Dependencies
+
+hyper 1 (client, http1), hyper-util, http-body-util, serde, thiserror, and a
+**direct** tokio dependency with minimal features (`net`, `io-util`, `time`,
+`rt`). The workspace tokio enables `full`, which a library must not force on
+users. Features add `process`, `sync`, `macros` and `libc` as needed.
+
+MSRV is **1.85**: hyper-util 0.1.21 uses edition 2024. Verify with
+`cargo +1.85 check -p waavy --all-features` when bumping dependencies.
+
+## Client
+
+- A fresh HTTP/1.1 connection per call — cheap on a local socket, no pooling
+  state. Pooling is a possible future optimisation.
+- `with_timeout` bounds the whole buffered call, or the response head for
+  streams.
+- Non-200 responses parse as `ErrorBody` → `Error::Render`; anything else →
+  `Error::Protocol`.
+
+### Error mapping rules
+
+- Once a `200` status line has arrived, **any** body error is
+  `Error::Interrupted` (`Error::from_body`). hyper surfaces truncation as EOF,
+  reset or chunk-parse errors depending on timing; they all mean "incomplete
+  document".
+- Only `Error::Connect` is retryable. Render failures repeat
+  deterministically.
+- `ErrorCode::Unknown(String)` keeps the client forward-compatible with new
+  codes.
+
+## One-shot
+
+Writes the request to stdin, closes it, drains stdout/stderr concurrently
+(`wait_with_output`, so large documents can't deadlock), parses stderr JSON
+lines (non-JSON is a protocol error), and maps the exit status.
+`kill_on_drop(true)`.
+
+## Supervisor
+
+```text
+Supervisor::spawn ── process::start ──▶ spawn child (stdin/stdout null, stderr piped)
+                                        stderr pump task → on_event(Log) + remember {"error"} line
+                                        poll /health every 25 ms until ok / exit / timeout
+        │
+        └─ tokio task: Supervision::run
+             select! { stop requested → terminate (SIGTERM, grace, SIGKILL) ; remove socket
+                       child exited   → policy.on_exit → backoff → process::start … }
+```
+
+- **Policy** (`policy.rs`) is a pure state machine: backoff
+  `initial · 2^failures` capped at `max`; reset after 30 s of uptime; give up
+  when `max_restarts` restarts already happened in the last 60 s.
+- **Startup errors**: if the child exits before becoming healthy, the
+  remembered `{"error":…}` line (after briefly draining the stderr pump)
+  becomes `Error::Render` — so a bad release surfaces as `RELEASE_INVALID`.
+- **Stop paths**: `shutdown()` sends on a oneshot channel (graceful); dropping
+  the handle drops the sender (immediate kill). A stop during a restart's
+  startup drops the half-started child (`kill_on_drop`). Every stop removes
+  the socket file.
+- **State** is published through an `Arc` of atomics plus a `Mutex<Status>`;
+  locks are held only for a copy.
+- SIGTERM is sent with `libc::kill` on the un-reaped child's PID (so the PID
+  can't have been recycled) — the one `unsafe` block.
+
+## Tests
+
+```bash
+eval "$(scripts/waavy-rs-prepare.sh)"          # builds dist, the host binary, the fixture release
+cargo test -p waavy --all-features
+cargo clippy -p waavy --all-targets --all-features -- -D warnings
+cargo fmt -p waavy --check                     # rustfmt.toml: max_width 120
+RUSTDOCFLAGS="-D warnings" cargo doc -p waavy --all-features --no-deps
+```
+
+Integration tests skip (with a message) without `WAAVY_BIN` and
+`WAAVY_RELEASE`. Supervisor tests need unix. Avoid timestamp-based unique
+names in tests: macOS clocks tick in microseconds and parallel tests
+collided (fixed with an atomic counter).

@@ -1,0 +1,59 @@
+---
+title: Conventions
+description: Code style and design conventions for waavy, on top of the bundt workspace rules.
+---
+
+# Conventions
+
+## Workspace rules (bundt)
+
+- TypeScript strict, `noUncheckedIndexedAccess`, `verbatimModuleSyntax`
+  (`import type` for types).
+- **No `any`**, **no `enum`** (use `as const`), **no default exports**
+  (except where a contract requires one: page modules and config files).
+- No `.js` extensions in imports; relative imports only.
+- Single quotes, no trailing commas; imports sorted by
+  `eslint-plugin-simple-import-sort`.
+- Packages ship **built JavaScript**: `exports` point at `dist/*.js` and
+  `dist/*.d.ts`, never at `.ts` source.
+
+## Waavy-specific
+
+- **Respect the layers.** If `src/layers.test.ts` fails, the fix is almost
+  never to loosen a rule.
+- **One source of truth per fact.** Error codes live in `ERROR_CODES`; the
+  platform table in `NPM_PLATFORMS`; versions flow from `package.json` through
+  the sync script. Derive, don't duplicate, and add a drift test when two
+  files must agree.
+- **Errors are `WaavyError(code, message, { page, cause })`.** Every failure a
+  user can see has a stable code. Messages say what was wrong *and* what to
+  do.
+- **Machine contracts stay machine-readable.** `render` and `serve` write
+  only JSON lines to stderr; stdout of `render` is only HTML. Human-friendly
+  output is for `build`.
+- **Return exit codes, don't call `process.exit`.** Pending writes must
+  flush.
+- **Validate at the boundary with Zod** (`parseWithSchema`), with strict
+  objects so typos fail loudly. Keep Zod out of browser code.
+- **No callbacks that return values into React** (`onError` digests).
+- **Comment the why.** Modules start with a doc comment describing their
+  responsibility and contract; Bun workarounds cite the spike or bug that
+  found them. Match the surrounding density.
+- **Contract changes update docs in the same change:** `PROTOCOL.md`, the
+  consumer docs site, the crate if it's affected, and `CHANGELOG.md`.
+
+## Rust
+
+- `rustfmt.toml`: `max_width = 120`, `use_small_heuristics = "Max"`.
+- Clippy clean with `-D warnings` for default, `--no-default-features` and
+  `--all-features`; rustdoc clean with `-D warnings`; `#![warn(missing_docs)]`.
+- Public enums are `#[non_exhaustive]`.
+- Keep `unsafe` to the minimum, each block with a `// SAFETY:` comment.
+
+## Commits
+
+- Phase work: `waavy(p<n>): T<k> <summary>`; otherwise conventional style
+  (`fix(waavy): …`).
+- Commit messages explain the *why*, especially for workarounds.
+- Don't commit binaries: `packages/waavy/npm/*/bin/` and `npm/*/LICENSE` are
+  gitignored; so are `Cargo.lock` and `dist/`.

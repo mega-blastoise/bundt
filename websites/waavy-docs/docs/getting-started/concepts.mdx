@@ -1,0 +1,96 @@
+---
+title: Core Concepts
+description: Pages, releases, renderers, hosts, and the document waavy produces.
+---
+
+# Core Concepts
+
+Four nouns describe all of waavy.
+
+## Page
+
+A **page** is a module whose default export is a React component, registered
+under a **page ID** in `waavy.config.ts`:
+
+```ts
+pages: {
+  home: './pages/home.tsx',
+  'account/settings': './pages/account/settings.tsx'
+}
+```
+
+Page IDs are lowercase `[a-z0-9_-]` segments separated by `/`. They are not
+URLs: your server decides which URL renders which page.
+
+A page receives **props** — a JSON object — and renders. It does not fetch
+its own data on the server: there are no loaders. Your backend already has
+the data; it sends it as props.
+
+## Release
+
+A **release** is what `waavy build` produces: a directory containing a
+manifest, one server bundle with every page *and its own copy of React*, and
+content-hashed browser assets.
+
+- Everything a render needs is inside the release; nothing is read from
+  `node_modules` at render time.
+- Server and browser code come from the same build and share one **build
+  ID**, so HTML and JavaScript cannot drift apart.
+- The renderer validates a release when it loads it and refuses broken or
+  incompatible ones up front.
+
+## Renderer
+
+The **renderer** is the `waavy` binary loaded with one release. It runs in
+one of two ways:
+
+- `waavy serve` — a long-lived process answering HTTP on a unix socket or
+  TCP port (~0.1 ms overhead per render). Use this in production.
+- `waavy render` — one process per render (~40 ms). Simple, stateless, fine
+  for scripts and low traffic.
+
+## Host
+
+The **host** is your backend. It owns routing, data, auth and caching, asks
+the renderer for pages, and serves the release's `client/` directory as
+static files. The [host protocol](/reference/protocol) is the whole
+contract between the two.
+
+## The document
+
+Waavy owns the HTML document. React renders only your component, inside
+`#waavy-root`:
+
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"><title>Desk lamp</title>
+    <!-- your trusted head HTML, the page's CSS, modulepreload links -->
+  </head>
+  <body>
+    <div id="waavy-root"><!-- your component, server-rendered --></div>
+    <script type="application/json" id="waavy-data">{"v":1,"page":"product","buildId":"…","props":{…}}</script>
+    <script type="module" src="/assets/product-1a2b3c.js"></script>
+  </body>
+</html>
+```
+
+In the browser, the page's script reads the props from `#waavy-data` and
+hydrates `#waavy-root` with the same component and the same props, so the
+server and client trees match.
+
+<Callout variant="info">
+Props travel as JSON inside a non-executable script element, with `<`, `>`, `&` and the JavaScript line separators escaped. A prop containing `</script><script>alert(1)</script>` is just a string. The `document.head` field is different: it is inserted verbatim, so only pass HTML you control.
+</Callout>
+
+## Buffered and streamed
+
+By default waavy **buffers**: it waits until every Suspense boundary has
+resolved (or the deadline passed) and returns the finished document. A
+successful response is always the complete, final page.
+
+With `"stream": true`, waavy starts sending as soon as the page **shell** —
+everything outside Suspense boundaries — is ready. See
+[Suspense and Streaming](/guides/suspense-and-streaming) for what that means
+for errors.

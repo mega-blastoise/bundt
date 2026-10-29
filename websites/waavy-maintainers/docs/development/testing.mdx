@@ -1,0 +1,82 @@
+---
+title: Testing
+description: Every waavy test suite, what it proves, and what it needs.
+---
+
+# Testing
+
+## Suites
+
+| Suite | Location | Proves | Needs |
+|---|---|---|---|
+| Unit | `src/**/*.test.ts(x)` | core semantics, schemas, escaping, launcher logic, layer rules | nothing |
+| Build integration | `test/build-release.test.ts` | release layout, manifest, atomic replace, failures | `bun run build` |
+| Renderer | `test/renderer.test.ts` | `createRenderer` against a real release | build |
+| CLI contract | `test/cli.test.ts` | one-shot stdout/stderr/exit contract, for **three executables**: `bun dist/cli.js`, `dist/bin/waavy`, and `node bin/waavy.js` (launcher) | build + binary |
+| serve contract | `test/serve.test.ts`, `test/http-transport.test.ts` | HTTP routes, statuses, headers, 413, streaming truncation, lifecycle, sockets | build + binary |
+| Dev mode | `test/serve-dev.test.ts` | rebuild on change, last good build | build + binary |
+| Launcher | `test/launcher.test.ts` | args/stdio/exit codes/signals under Node and Bun (fake binaries) | build, unix |
+| Packaging | `test/platform-packages.test.ts`, `test/package-contents.test.ts` | version sync, platform manifests, tarball contents | build, npm |
+| Hydration e2e | `e2e/hydration.test.ts` | real Chromium hydrates and stays interactive; hostile props | build, Playwright |
+| Rust host e2e | `e2e/axum.test.ts` | Rust client → `waavy serve` → browser | `WAAVY_E2E_AXUM=1`, cargo, Playwright |
+| Rust | `crates/waavy/tests/*` | client semantics, schema conformance, real binary, Supervisor | `waavy-rs-prepare.sh` env |
+| Install | `scripts/waavy-install-test.sh` | packed tarballs install and work via npm, bun and the bare binary | node, npm, bun, curl |
+
+```bash
+cd packages/waavy
+bun run test                     # unit + integration + contract (builds the binary first)
+bun test src                     # unit only, fast
+bun test test/serve.test.ts      # one file
+bun run test:e2e                 # Playwright
+WAAVY_E2E_AXUM=1 bun test e2e/axum.test.ts
+```
+
+## Pitfalls we have hit
+
+<Callout variant="warning">
+`bun test src test` treats arguments as **substring filters**, not directories: `test` also matches `e2e/*.test.ts`. The package script uses `bun test --path-ignore-patterns 'e2e/**'`. Passing `./src ./test` (path mode) changes file order and exposed an interaction where happy-dom globals from `src` tests break `Bun.build` in `test/`. Don't change the script without running the whole suite.
+</Callout>
+
+- **Default 5 s timeout.** Anything that spawns `npm`, builds a release or
+  compiles a binary can exceed it on slow CI runners (macOS Intel). Pass an
+  explicit timeout as the test's third argument.
+- **Unique names.** Never derive temp-dir or socket names from timestamps:
+  macOS clocks tick in microseconds, so parallel tests collided and one
+  test's cleanup deleted another's socket. Use `mkdtemp` or a counter.
+- **Unix socket path length** is ~104 bytes on macOS. Keep test socket paths
+  short (`os.tmpdir()` + a short name).
+- **`--log-level` in tests.** `test/support/serve.ts` waits for the
+  `listening` event; levels other than `info` suppress it, and the helper
+  rejects them.
+- **Order-dependent events.** Log lines arrive through a separate stderr
+  task; don't assert their order relative to other events (the Supervisor
+  test once did and flaked on Linux).
+- **happy-dom teardown** races React's scheduler — flush it first
+  (`flushReact` in `hydrate.test.tsx`).
+- **The `bun test` process is shared** by all files: don't mutate
+  `process.env` in a test; pass `env` to the child process (or prefix the
+  command with `env VAR=…`).
+
+## Writing a new contract test
+
+- Use the fixture (`test/support/fixture.ts` → `buildFixtureRelease()`),
+  which builds into a fresh temp directory and returns `dispose`.
+- For `serve`, use `test/support/serve.ts` to start the binary and wait for
+  `listening`.
+- Prefer black-box tests against the binary for anything that is part of the
+  protocol: they are what hosts experience.
+- If you add a new page to the fixture, check every suite that iterates
+  pages (`test/build-release.test.ts` lists them explicitly).
+
+## Before you push
+
+```bash
+bun run lint                                   # repo root (pre-existing errors exist outside waavy; keep waavy clean)
+bunx eslint packages/waavy scripts/waavy-*.ts
+(cd packages/waavy && bunx tsc --noEmit && bun run test && bun run test:e2e)
+eval "$(scripts/waavy-rs-prepare.sh)" && cargo fmt -p waavy --check && \
+  cargo clippy -p waavy --all-targets --all-features -- -D warnings && cargo test -p waavy --all-features
+```
+
+If you touched packaging or the launcher, also run
+`scripts/waavy-install-test.sh`.

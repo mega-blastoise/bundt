@@ -1,0 +1,85 @@
+---
+title: Overview
+description: Maintainer guide to waavy — where everything lives and how it fits together.
+---
+
+# Waavy Maintainer Guide
+
+This site is for people who change waavy: the TypeScript package, the native
+binary, the Rust crate, and the release machinery. User documentation lives
+in the [waavy docs site](https://github.com/mega-blastoise/bundt/tree/main/websites/waavy-docs).
+
+## What ships
+
+| Artifact | Source | Published as |
+|---|---|---|
+| `@bundt/waavy` | `packages/waavy` | npm: library bundles, launcher, JSON Schema |
+| `@bundt/waavy-<os>-<cpu>` ×5 | `packages/waavy/npm/*` + compiled binary | npm: one native binary each |
+| `waavy` crate | `crates/waavy` | crates.io |
+| Release assets | `build/release-assets.ts` | GitHub release: 7 archives + `SHA256SUMS` |
+
+All four move in lockstep: one version, one tag (`@bundt/waavy@<version>`),
+one workflow (`.github/workflows/release-waavy.yml`).
+
+## Map of the repository
+
+```text
+packages/waavy/
+├── src/
+│   ├── core/        runtime-agnostic: protocol, errors, render, document, data island, manifest, config
+│   ├── build/       waavy build (Bun.build, generated entries, release dir)
+│   ├── runtime/     open + validate a release, createRenderer
+│   ├── transport/   one-shot CLI I/O and the node:http server
+│   ├── cli/         cac commands (build, render, serve, --dev)
+│   ├── browser/     hydrate() for generated client entries
+│   ├── launcher/    the npm `waavy` launcher (Node-compatible, no deps)
+│   └── index.ts · server.ts · browser.ts · entry-server.ts   package entries
+├── build/           package build, binary compile, cross-compile, release assets, version sync
+├── bin/waavy.js     npm bin shim → dist/launcher.js
+├── npm/<platform>/  committed platform package manifests (binaries gitignored)
+├── fixtures/basic/  fixture project used by integration and e2e tests
+├── test/            integration + contract tests (need `bun run build`)
+├── e2e/             Playwright: hydration, axum host
+└── docs/PROTOCOL.md the host contract
+crates/waavy/        Rust client, one-shot, Supervisor
+scripts/             waavy-sync-versions.ts, waavy-install-test.sh, waavy-rs-prepare.sh
+.claude/specs/waavy/ ARCHITECTURE.md, phase specs P1–P4, spike reports, decisions
+websites/waavy-*/    these two docs sites (dxdocs)
+```
+
+## Everyday commands
+
+```bash
+cd packages/waavy
+bun run build            # dist/
+bun run test             # unit + integration + contract (compiles the host binary first)
+bun run test:e2e         # Playwright (bunx playwright install chromium once)
+bun run build:binaries   # all 7 distribution binaries
+
+eval "$(scripts/waavy-rs-prepare.sh)" && cargo test -p waavy --all-features   # from the repo root
+scripts/waavy-install-test.sh                                                  # pack + install like a user
+```
+
+## Start here
+
+<CardGrid>
+  <Card title="System overview" icon="layers" href="/architecture/overview">
+    Concepts, layers, the dependency rule, and the public surface.
+  </Card>
+  <Card title="Testing" icon="check-circle" href="/development/testing">
+    Which suite covers what, and what each needs to run.
+  </Card>
+  <Card title="Release runbook" icon="rocket" href="/releasing/runbook">
+    Cutting a release end to end, including verification.
+  </Card>
+  <Card title="Known issues" icon="alert-triangle" href="/known-issues">
+    Limitations, debts, and sharp edges discovered so far.
+  </Card>
+</CardGrid>
+
+## Source of truth
+
+When documents disagree, trust in this order: the **code and its tests**,
+`packages/waavy/docs/PROTOCOL.md` (contract-tested), the phase specs'
+implementation notes, then `ARCHITECTURE.md` (the design; some details
+changed during implementation — see [Known Issues](/known-issues)).

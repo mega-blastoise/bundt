@@ -1,0 +1,81 @@
+---
+title: Release Workflow
+description: How .github/workflows/release-waavy.yml builds, verifies and publishes a release.
+---
+
+# Release Workflow
+
+`.github/workflows/release-waavy.yml` publishes everything for one version.
+
+## Triggers
+
+| Trigger | Mode | Version |
+|---|---|---|
+| push tag `@bundt/waavy@<version>` | **real release** | from the tag; must equal `packages/waavy/package.json` |
+| `workflow_dispatch`, `dry_run: true` | dry run | `package.json`, or the `version` input (e.g. `0.4.0-rc.0`) |
+| `workflow_dispatch`, `dry_run: false` | rejected | real releases only run from tags |
+
+`workflow_dispatch` only works for workflows present on the **default
+branch** (`main`): dry-run a release workflow change after it's merged, or
+via a PR that adds a temporary trigger.
+
+## Jobs
+
+```text
+prepare ─▶ build ─▶ smoke (×7, native runners) ─┬─▶ publish-npm ───┬─▶ github-release
+                                                └─▶ publish-crate ─┘
+```
+
+**prepare** — resolves `version`, `dry_run`, `npm_tag` (`next` if the version
+has a `-`, else `latest`) and `override`. Fails fast on a malformed version
+(strict semver check) or a tag/`package.json` mismatch.
+
+**build** (ubuntu) — `bun install --frozen-lockfile`; applies a dry-run
+version override (sync script + `WAAVY_VERSION` sed) in the job's checkout;
+`waavy-sync-versions.ts --check`; build, typecheck, test; compiles all seven
+binaries; builds a fixture release with the linux-x64 binary; writes release
+archives + `SHA256SUMS`; `npm pack`s the five platform packages and the main
+package. Uploads three artifacts: `release-assets`, `npm-packages`,
+`smoke-release`.
+
+**smoke** — one job per binary on its native runner: verify the checksum,
+extract the archive, check `--version` prints `waavy/<version>`, and render
+the fixture `counter` page. musl binaries run inside `alpine:3.20` (with
+`libstdc++ libgcc`). Windows is `continue-on-error`.
+
+**publish-npm** (environment `release`, `id-token: write`) — publishes the
+**exact tarballs from build**, platform packages first so the main package's
+`optionalDependencies` resolve the moment it appears. Real runs use
+`--provenance`; already-published versions are skipped so a partial failure
+can be re-run. Dry runs pass `--dry-run`.
+
+**publish-crate** (environment `release`) — verifies the crate version, then
+`cargo publish -p waavy` (skipped if that version is on crates.io; `--dry-run`
+plus `--allow-dirty` for overridden dry runs).
+
+**github-release** — extracts the version's section from
+`packages/waavy/CHANGELOG.md` as notes and creates the release with every
+archive and `SHA256SUMS` (`--prerelease` for prerelease versions). Dry runs
+print what they would create.
+
+## Secrets and settings
+
+| Name | Where | Used by |
+|---|---|---|
+| `NPM_TOKEN` | `release` environment | `publish-npm` (granular token with publish rights on `@bundt/*`, including new package names) |
+| `CARGO_REGISTRY_TOKEN` | `release` environment | `publish-crate` |
+| `GITHUB_TOKEN` | automatic | `github-release` (`contents: write`) |
+
+Runners used: `ubuntu-latest`, `ubuntu-24.04-arm`, `macos-15`,
+`macos-15-intel`, `windows-latest`.
+
+## Why it's shaped like this
+
+- **Smoke tests gate publishing.** Cross-compiled binaries are only trusted
+  after running on their real platform.
+- **Publish the artifacts that were tested.** Tarballs are packed once in
+  `build`; publish jobs don't rebuild.
+- **Idempotent publishing.** Re-running after a partial failure skips what's
+  already out.
+- **Dry runs exercise everything but the side effects**, including the
+  prerelease paths via the version override, without a commit.

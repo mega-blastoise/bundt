@@ -1,0 +1,64 @@
+---
+title: Adding a Platform
+description: Shipping a waavy binary for a new OS/CPU combination.
+---
+
+# Adding a Platform
+
+First check Bun supports the target (`bun build --compile --target=…`); waavy
+can only ship what Bun can compile.
+
+## An npm-distributed platform
+
+Example: `linux-riscv64`, if Bun added `bun-linux-riscv64`.
+
+<Steps>
+  <Step title="Add it to the platform table">
+    In `src/launcher/platforms.ts`, add `{ os: 'linux', cpu: 'riscv64', support: 'experimental' }` to `NPM_PLATFORMS`. This one table drives the launcher, the platform manifests, the version sync and the compile targets.
+  </Step>
+  <Step title="Map the Bun target">
+    In `build/targets.ts`, add `'linux-riscv64': 'bun-linux-riscv64'` to `BUN_TARGET_BY_PLATFORM`. A missing mapping throws at import time.
+  </Step>
+  <Step title="Generate the package">
+
+```bash
+bun scripts/waavy-sync-versions.ts      # writes npm/linux-riscv64/package.json and the optionalDependency
+bun install                             # bun.lock records the new optional dependency
+(cd packages/waavy && bun test test/platform-packages.test.ts src/launcher)
+```
+
+  </Step>
+  <Step title="Compile and run it">
+
+```bash
+(cd packages/waavy && bun build/binaries.ts --target linux-riscv64)
+file packages/waavy/npm/linux-riscv64/bin/waavy
+```
+
+Run it on real hardware or under emulation before going further.
+
+  </Step>
+  <Step title="Add CI coverage">
+    Add a smoke entry in `release-waavy.yml` (runner + asset, `experimental: true` until proven) and, if a native runner exists, the `waavy-matrix` job in `ci.yml`.
+  </Step>
+  <Step title="Document it">
+    Update the platform tables in `packages/waavy/README.md`, `websites/waavy-docs/docs/reference/platforms.mdx` and `getting-started/installation.mdx`, plus `CHANGELOG.md`.
+  </Step>
+</Steps>
+
+<Callout variant="warning">
+A new platform package is a **new npm package name**. The first publish needs an npm token allowed to create packages in the `@bundt` scope. Consider publishing it once by hand, or reserving the name, before the release.
+</Callout>
+
+## A release-asset-only target
+
+For targets npm can't select (like musl), add an entry to
+`RELEASE_ASSET_TARGETS` in `build/targets.ts`, a smoke job in
+`release-waavy.yml`, and documentation. Nothing else changes: archives and
+`SHA256SUMS` are generated from `BINARY_TARGETS`.
+
+## Promoting experimental → supported
+
+Requires: the CLI/serve contract tests and the install test passing on a
+native runner in `waavy-matrix`, the smoke job no longer
+`continue-on-error`, and the docs updated.

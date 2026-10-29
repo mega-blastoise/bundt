@@ -1,0 +1,113 @@
+---
+title: Rendering and Hydration
+description: Render sessions, error classification, the document shell, the data island and hydration.
+---
+
+# Rendering and Hydration
+
+## Error taxonomy
+
+Keep these three terms distinct in code, tests and docs:
+
+| Term | When | Outcome |
+|---|---|---|
+| **Recoverable error** | React's `onError` fires while the shell still succeeds: an error inside a Suspense boundary, or a boundary aborted at the deadline | Document is valid; counted and reported, never thrown |
+| **Render failure** | `renderToReadableStream` rejects (the shell threw) | `RENDER_FAILED`, no HTML |
+| **Timeout** | the deadline passes before the shell is ready | `RENDER_TIMEOUT`, no HTML |
+
+After the shell is ready, the deadline *aborts* the render instead: React
+flushes fallbacks for pending boundaries, the browser renders them, and each
+aborted boundary is a recoverable error with `reason: "timeout"`.
+
+## Render sessions (`core/render.ts`)
+
+`startRenderSession` owns one render:
+
+- a deadline timer at `timeoutMs` (request → release default → 10 s), and an
+  `AbortController` that also follows the caller's signal (client
+  disconnects);
+- an `onError` collector that records recoverable errors (with React's
+  digest when present);
+- classification of the shell promise into success, `RENDER_FAILED`, or
+  `RENDER_TIMEOUT`.
+
+On top of it:
+
+- `renderBuffered` waits for `allReady`, then concatenates prefix + React
+  output + suffix into one string;
+- `renderStreaming` returns a stream that emits the prefix, pipes React's
+  bytes, then the suffix. If React's stream errors after the shell, the
+  wrapping stream errors **without writing the suffix** — transports turn that
+  into a truncated response.
+
+`core/render.ts` uses only Web APIs and never imports React; the release's
+`renderToReadableStream` is passed in.
+
+<Callout variant="warning">
+Callbacks given to React must not return values. `onError: (e) => errors.push(e)` returns the array length, which React treats as a digest. Use block bodies.
+</Callout>
+
+## The document shell (`core/document.ts`)
+
+`createDocumentShell` returns `{ prefix, suffix }`:
+
+- **prefix** — doctype, `<html lang>`, `<head>` (charset, escaped title,
+  verbatim `document.head`, stylesheet links, `modulepreload` links), and the
+  opening `<div id="waavy-root">`;
+- **suffix** — closing container, the data island, the client entry
+  `<script type="module">`.
+
+React renders only the page component between them. This is what makes
+hydration match by construction: the browser hydrates `#waavy-root` and
+nothing else. Asset URLs are `publicPath` + manifest path
+(`runtime/assets.ts`).
+
+`document.head` is trusted and inserted verbatim — the one deliberate
+injection point; it's documented as such everywhere.
+
+## The data island (`core/data-island.ts`)
+
+```html
+<script type="application/json" id="waavy-data">{"v":1,"page":"product","buildId":"…","props":{…}}</script>
+```
+
+`serializeDataIsland` JSON-encodes the island and then replaces five
+characters with their JSON unicode escapes: the less-than sign, the
+greater-than sign, the ampersand, and U+2028 / U+2029. The result is still
+valid JSON with identical meaning, but can never close the script element or
+be misparsed by HTML.
+
+It's JSON, not JavaScript: a malformed value cannot become a syntax error, and
+there's nothing to execute. The module is bundled into the browser, so it
+must not import Zod or server-only code.
+
+The required regression test: a prop containing
+`</script><script>alert(1)</script>` round-trips intact and does not execute
+(unit test plus the Playwright hydration test).
+
+<Callout variant="tip">
+Editing this module or its tests with tools that decode escape sequences (some editors, some code generators) can silently turn the escapes into raw characters. Check the file bytes after editing: `grep 'u003c' src/core/data-island.ts` must still find the escape table, and the data-island tests must pass.
+</Callout>
+
+## Hydration (`browser/hydrate.ts`)
+
+Generated client entries call `hydrate(Page, { buildId })`:
+
+1. read and parse `#waavy-data` (`parseDataIsland`);
+2. warn (`[waavy]` prefix) if the island's `buildId` differs from the entry's —
+   HTML and JS from different builds, usually a stale CDN or a deploy in
+   progress;
+3. `hydrateRoot(#waavy-root, <Page {...props} />)` with
+   `onRecoverableError` → `console.error`.
+
+Failures are logged, never thrown: a page that fails to hydrate still shows
+its server HTML.
+
+## Testing notes
+
+- Unit tests for render semantics use small inline components
+  (`render.test.tsx`).
+- `src/browser/hydrate.test.tsx` uses happy-dom; it flushes React's scheduler
+  before teardown (`flushReact`) to avoid a teardown race.
+- Real hydration is proven only by Playwright (`e2e/hydration.test.ts`):
+  click a button after hydration and observe the state change.

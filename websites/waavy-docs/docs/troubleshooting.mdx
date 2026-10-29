@@ -1,0 +1,100 @@
+---
+title: Troubleshooting
+description: Common problems and how to fix them.
+---
+
+# Troubleshooting
+
+## Installing
+
+**"The waavy binary package @bundt/waavy-… is not installed" (exit 127)**
+
+Optional dependencies were skipped. Common causes: `npm install --omit=optional`
+or `--no-optional`, `yarn --ignore-optional`, or a lockfile generated on a
+different OS that a strict install refuses to extend. Reinstall with optional
+dependencies, add the platform package explicitly
+(`npm i @bundt/waavy-linux-x64`), or set `WAAVY_BINARY_PATH` to a downloaded
+binary.
+
+**"waavy has no prebuilt binary for linux-… on npm"**
+
+Your platform isn't on npm — most often Alpine (musl). Download the musl
+asset from the [GitHub release](https://github.com/mega-blastoise/bundt/releases)
+and point `WAAVY_BINARY_PATH` at it, or call it directly.
+
+**Alpine: `Error loading shared library libstdc++.so.6`**
+
+```bash
+apk add --no-cache libstdc++ libgcc
+```
+
+**`npm install` says the version doesn't exist right after a release**
+
+npm caches package metadata. Retry with `npm install --prefer-online`.
+
+## Building
+
+**`CONFIG_INVALID: No waavy.config.ts / … found`** — run from the project
+root or pass `--root` / `--config`.
+
+**`CONFIG_INVALID` with a list of issues** — the config has a typo or an
+unknown key (keys are checked strictly), a page ID with uppercase letters, or a
+`publicPath` without a trailing `/`.
+
+**`BUILD_FAILED`** — the message contains the bundler's error: usually an
+import that can't be resolved or a syntax error in a page. Remember pages are
+bundled for the browser too: server-only modules (`fs`, database drivers)
+can't be imported.
+
+## Rendering
+
+**`PAGE_NOT_FOUND`** — the ID isn't registered in *this release*. Check that
+the release you're serving was built after you added the page.
+
+**`RENDER_FAILED`** — the page's shell threw. The message carries the
+component's error. Usually props the component didn't expect: log the request
+and render it locally with `waavy render --stdin`.
+
+**`RENDER_TIMEOUT`** — the shell (everything outside `<Suspense>`) wasn't
+ready in time. Wrap slow parts in `<Suspense>` with a fallback, or raise
+`timeoutMs`.
+
+**`VERSION_MISMATCH`** — the release was built by a different, incompatible
+waavy than the binary serving it. Build and serve with the same version.
+
+**`RELEASE_INVALID`** — files are missing from the release directory.
+Deploy the whole directory (`manifest.json`, `server/`, `client/`), not just
+parts of it.
+
+## Serving
+
+**The page renders but is unstyled / not interactive** — the browser can't
+load the assets. Open the network tab: requests to `publicPath` must return
+the files from `<release>/client/`. Check your static route and `publicPath`.
+
+**A `[waavy]` build ID mismatch warning in the console** — the HTML and the
+JavaScript come from different releases: a stale CDN, or HTML rendered by
+the new release before its assets were uploaded. Upload assets first; keep old
+assets around after a deploy.
+
+**Hydration errors in the console** — the component rendered differently in
+the browser than on the server. Look for `Date.now()`, `Math.random()`,
+`window` checks or locale-dependent formatting during render.
+
+**`waavy serve` refuses to start on a socket** — another live server is
+already listening on that path. A stale socket file from a crashed process is
+replaced automatically.
+
+**Streamed responses end early** — that's how waavy reports a failure after
+the shell was sent. Treat a body read error as a failed render; see
+[Suspense and Streaming](/guides/suspense-and-streaming).
+
+**Connection refused from the Rust `Supervisor` client** — the renderer is
+restarting (`Error::Connect`, retryable), or the supervisor gave up after
+repeated crashes (`status()` is `Failed`). Check the renderer's log lines from
+`on_event`.
+
+## Still stuck?
+
+[Open an issue](https://github.com/mega-blastoise/bundt/issues) with the
+waavy version (`waavy --version`), your platform, and the JSON error line.

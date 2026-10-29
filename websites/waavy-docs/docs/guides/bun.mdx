@@ -1,0 +1,78 @@
+---
+title: Bun (in-process)
+description: Render waavy releases inside a Bun server with @bundt/waavy/server.
+---
+
+# Bun (in-process)
+
+If your server already runs on Bun, you can skip the separate renderer and
+load a release in-process:
+
+```ts
+import { createRenderer, isWaavyError } from '@bundt/waavy/server';
+
+const renderer = await createRenderer({ release: './dist/waavy' });
+
+Bun.serve({
+  port: 3000,
+  async fetch(request) {
+    const url = new URL(request.url);
+
+    if (url.pathname.startsWith('/assets/')) {
+      return new Response(Bun.file(`./dist/waavy/client/${url.pathname.slice('/assets/'.length)}`));
+    }
+
+    try {
+      const { html, recoverableErrors } = await renderer.render({
+        v: 1,
+        page: 'product',
+        props: { name: 'Desk lamp', price: 40 },
+        document: { title: 'Desk lamp' }
+      });
+      if (recoverableErrors.length > 0) console.warn('degraded render', recoverableErrors);
+      return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8' } });
+    } catch (error) {
+      if (isWaavyError(error)) return new Response(error.message, { status: 500 });
+      throw error;
+    }
+  }
+});
+```
+
+<Callout variant="warning">
+The asset route above is a sketch: in a real server, normalize the path and keep it inside `client/`, or use your framework's static-file handler.
+</Callout>
+
+## The renderer API
+
+```ts
+const renderer = await createRenderer({ release: './dist/waavy' });
+
+renderer.buildId;  // the release's build ID
+renderer.pages;    // registered page IDs
+
+await renderer.render(request, { signal });        // → { html, buildId, recoverableErrors }
+await renderer.renderStream(request, { signal });  // → { stream, buildId, recoverableErrors() }
+await renderer.close();
+```
+
+- `request` is a protocol request (see [Host Protocol](/reference/protocol));
+  it is validated, so you can pass untrusted JSON straight through.
+- `createRenderer` validates the release and throws `RELEASE_INVALID` or
+  `VERSION_MISMATCH` up front.
+- Failures throw a `WaavyError` whose `code` is one of the
+  [error codes](/reference/errors).
+- `renderStream` resolves once the shell is ready. If rendering fails later,
+  the stream errors before the closing markup is written; abort your response
+  when reading it fails.
+- Pass an `AbortSignal` to stop a render when the client disconnects.
+
+This API requires Bun 1.3 or newer. Everything else in waavy — the CLI and
+the binary — needs no JavaScript runtime.
+
+## Types
+
+```ts
+import type { RenderRequest, ErrorBody, ErrorCode } from '@bundt/waavy';
+import { ERROR_CODES, PROTOCOL_VERSION } from '@bundt/waavy';
+```

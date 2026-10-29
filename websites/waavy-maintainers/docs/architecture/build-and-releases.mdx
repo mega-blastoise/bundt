@@ -1,0 +1,125 @@
+---
+title: Build and Releases
+description: How waavy build turns a project into a release, and the release contract.
+---
+
+# Build and Releases
+
+## The pipeline
+
+`src/build/build-release.ts` orchestrates five steps:
+
+<Steps>
+  <Step title="Load the config">
+    `config-loader.ts` finds the first of `waavy.config.{ts,mts,js,mjs}`, imports it, validates it with `parseConfig` (`CONFIG_INVALID` on failure), resolves `pages`/`outDir` relative to the config file, and checks every page module exists.
+  </Step>
+  <Step title="Generate entries">
+    `entries.ts` writes one server entry (all pages) and one client entry per page into `node_modules/.cache/waavy` **inside the project**, so Bun resolves `react` and `@bundt/waavy` from the project's own `node_modules`. The generated source is tiny; behavior lives in `@bundt/waavy/entry-server` and `@bundt/waavy/browser`.
+  </Step>
+  <Step title="Bundle">
+    `bundles.ts` runs two `Bun.build`s via `bun-build.ts` (which turns every failure into `BUILD_FAILED` with Bun's diagnostics). Client: browser target, code-split, chunks named `chunks/chunk-[hash]`, CSS collected per entry. Server: one self-contained `entry.js` with the project's React (D8); CSS imports are replaced by empty modules (`cssStubPlugin`). Both define `process.env.NODE_ENV`.
+  </Step>
+  <Step title="Write the manifest">
+    `client-assets.ts` reads Bun's metafile to find, per page, the client entry output, its CSS bundle and its statically imported chunks (for `modulepreload`; dynamic imports excluded). The manifest is validated with the same schema the runtime uses before it is written.
+  </Step>
+  <Step title="Publish atomically">
+    `release-dir.ts` builds into a sibling staging directory and replaces the old release with one rename. A failed build leaves the previous release untouched; temporary files are always removed.
+  </Step>
+</Steps>
+
+The build ID (`build-id.ts`) is base-36 milliseconds plus 24 random bits:
+roughly sortable by time, unique within a millisecond. The same ID goes into
+the manifest, the server entry and every client entry.
+
+## The release
+
+```text
+dist/waavy/
+├── manifest.json
+├── server/entry.js     (+ .map)
+└── client/
+    ├── <page>-<hash>.js
+    ├── <page>-<hash>.css
+    └── chunks/chunk-<hash>.js
+```
+
+### Manifest (`core/manifest.ts`)
+
+```json
+{
+  "manifestVersion": 1,
+  "abi": 1,
+  "protocolVersion": 1,
+  "waavyVersion": "0.3.0",
+  "buildId": "mvt3np0x-7feaec",
+  "publicPath": "/assets/",
+  "renderDefaults": { "timeoutMs": 10000 },
+  "server": "server/entry.js",
+  "pages": {
+    "product": { "client": "product-3f2a.js", "css": ["product-77e1.css"], "preload": ["chunks/chunk-91ac.js"] }
+  }
+}
+```
+
+- `server` is relative to the release root; page asset paths are relative to
+  `client/` (the directory served at `publicPath`).
+- Every path must stay inside the release (no absolute paths, `..` or
+  backslashes) — a tampered manifest can't point the runtime elsewhere.
+- The schema is strict: unknown keys are `RELEASE_INVALID`.
+
+### Release ABI (`core/release-abi.ts`)
+
+`server/entry.js` exports one object named `release`:
+
+```ts
+type ReleaseEntry = {
+  abi: number;           // RELEASE_ABI_VERSION, currently 1
+  waavyVersion: string;
+  buildId: string;
+  pages: readonly string[];
+  renderToReadableStream(pageId, props, { signal, onError }): Promise<ReactRenderStream>;
+};
+```
+
+This is the *only* interface between the runtime and a release. The runtime
+never imports React: the release brings its own copy and renders with it;
+deadlines, error classification and the document shell stay on the runtime
+side. Consequences:
+
+- A binary can run releases built by a different waavy version, as long as
+  the integer versions match.
+- Values crossing the boundary must be plain data and functions. Never use
+  `instanceof` against runtime classes — the release has its own copies of
+  waavy's code.
+- `entry-server.ts` wraps the caller's `onError` so React never sees a return
+  value: React treats a string returned from `onError` as the error digest
+  (a real P1 bug: `push()`'s return value leaked into digests).
+
+### Compatibility checks (`runtime/release.ts`)
+
+`openRelease` validates eagerly, before a renderer accepts work:
+
+1. manifest parses and matches the schema → else `RELEASE_INVALID`;
+2. `manifestVersion`, `abi` and `protocolVersion` equal the runtime's →
+   else `VERSION_MISMATCH` naming the first mismatch;
+3. the server entry and every asset in the manifest exist → `RELEASE_INVALID`;
+4. the entry's `release` export has the right shape and ABI.
+
+`waavyVersion` is recorded but deliberately **not** compared: compatibility
+is defined by the integer versions, so patch and minor releases of the
+binary keep serving existing releases. Bump an integer version whenever its
+contract changes (see [Changing the Protocol](/runbooks/protocol-changes)).
+
+## Dev mode
+
+`cli/dev-releases.ts` reuses the same pipeline: each rebuild produces a normal
+release in `node_modules/.cache/waavy/dev/<n>/`, loaded through the same
+`createRenderer` path as production. Two builds are kept on disk. Rebuilds
+are debounced (100 ms) and serialized; a change during a build schedules
+exactly one more; a failed rebuild keeps the last good release serving.
+
+Each build lives at a new path because **Bun caches ES modules by path and
+ignores query strings** — `import(url + '?t=…')` returns the stale module.
+For the same reason the config is re-imported from a uniquely named sibling
+copy (`.waavy.config.<uuid>.ts`), which the watcher ignores. Superseded server
+entries stay in memory until the process exits (a known dev-only cost).
