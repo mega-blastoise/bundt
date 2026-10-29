@@ -9,6 +9,8 @@
 //!   TCP. Recommended for production (sub-millisecond overhead per render).
 //! - [`oneshot::render`] — runs the `waavy` executable once per render
 //!   (feature `oneshot`, on by default). Simpler, ~40 ms per render.
+//! - [`Supervisor`] — starts `waavy serve` from your process, restarts it if
+//!   it crashes, and stops it gracefully (feature `supervisor`, unix only).
 //!
 //! ```no_run
 //! # async fn example() -> waavy::Result<()> {
@@ -37,7 +39,11 @@ mod error;
 #[cfg(feature = "oneshot")]
 pub mod oneshot;
 mod protocol;
+#[cfg(all(unix, feature = "supervisor"))]
+pub mod supervisor;
 
 pub use client::{Client, RenderStream, Rendered};
 pub use error::{Error, Result};
 pub use protocol::{Document, ErrorBody, ErrorCode, ErrorDetail, Health, RenderRequest, PROTOCOL_VERSION};
+#[cfg(all(unix, feature = "supervisor"))]
+pub use supervisor::{Event, Status, Supervisor, SupervisorBuilder};

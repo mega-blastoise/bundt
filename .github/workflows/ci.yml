@@ -121,10 +121,17 @@ jobs:
         run: scripts/waavy-rs-prepare.sh --env-file >> "$GITHUB_ENV"
 
       - name: Clippy
-        run: cargo clippy -p waavy --all-targets -- -D warnings
+        run: |
+          cargo clippy -p waavy --all-targets --all-features -- -D warnings
+          cargo clippy -p waavy --no-default-features -- -D warnings
 
       - name: Test
-        run: cargo test -p waavy
+        run: cargo test -p waavy --all-features
+
+      - name: Docs
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc -p waavy --all-features --no-deps
 
       - name: Install Playwright Chromium
         working-directory: packages/waavy

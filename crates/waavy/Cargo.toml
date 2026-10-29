@@ -15,6 +15,8 @@ categories = ["web-programming", "template-engine"]
 default = ["oneshot"]
 # Spawn `waavy render --stdin` instead of talking to a running server.
 oneshot = ["tokio/process"]
+# Run and supervise `waavy serve` from the host process (unix only).
+supervisor = ["tokio/process", "tokio/sync", "tokio/macros", "dep:libc"]
 
 [dependencies]
 bytes = "1.12.1"
@@ -22,6 +24,7 @@ futures-core = "0.3.34"
 http-body-util = "0.1.5"
 hyper = { version = "1.12.0", features = ["client", "http1"] }
 hyper-util = { version = "0.1.20", features = ["tokio"] }
+libc = { version = "0.2", optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -29,7 +32,12 @@ thiserror = { workspace = true }
 tokio = { version = "1", features = ["net", "io-util", "time", "rt"] }
 
 [dev-dependencies]
+libc = "0.2"
 axum = "0.8.9"
 jsonschema = { version = "0.33.0", default-features = false }
 tokio = { workspace = true, features = ["full"] }
 tower-http = { version = "0.7.1", features = ["fs"] }
+
+[[test]]
+name = "supervisor"
+required-features = ["supervisor"]
