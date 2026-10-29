@@ -1,0 +1,359 @@
+# Release @bundt/waavy, its platform packages, and the `waavy` crate
+# (WAAVY_P3_DIST.md T7). The generic release.yml skips waavy tags.
+#
+# Real release: push the tag `@bundt/waavy@<version>`; package.json, the
+#   platform packages and Cargo.toml must already carry <version>
+#   (scripts/waavy-sync-versions.ts).
+# Dry run: Actions → "Release waavy" → Run workflow. Everything runs — tests,
+#   every binary, smoke tests on native runners, packing — but npm and
+#   crates.io get `--dry-run` and no GitHub release is created. `version`
+#   optionally overrides the version for the run (e.g. 0.3.0-rc.0) without a
+#   commit, to exercise the prerelease (`next` dist-tag) path.
+#
+# Jobs: prepare → build → smoke (matrix) → publish-npm + publish-crate →
+#       github-release.
+name: Release waavy
+
+on:
+  push:
+    tags:
+      - "@bundt/waavy@*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (no publishing)"
+        type: boolean
+        default: true
+      version:
+        description: "Override the version for this run (dry runs only), e.g. 0.3.0-rc.0"
+        type: string
+        required: false
+
+concurrency:
+  group: release-waavy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      dry_run: ${{ steps.meta.outputs.dry_run }}
+      npm_tag: ${{ steps.meta.outputs.npm_tag }}
+      override: ${{ steps.meta.outputs.override }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: meta
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          PACKAGE_VERSION=$(node -p 'require("./packages/waavy/package.json").version')
+          if [ "$EVENT" = "push" ]; then
+            VERSION="${GITHUB_REF_NAME#@bundt/waavy@}"
+            DRY_RUN=false
+            OVERRIDE=false
+            if [ "$VERSION" != "$PACKAGE_VERSION" ]; then
+              echo "::error::Tag version $VERSION does not match packages/waavy/package.json ($PACKAGE_VERSION)"
+              exit 1
+            fi
+          else
+            DRY_RUN="$INPUT_DRY_RUN"
+            if [ -n "$INPUT_VERSION" ]; then
+              if [ "$DRY_RUN" != "true" ]; then
+                echo "::error::A version override is only allowed for dry runs; release by pushing a tag"
+                exit 1
+              fi
+              VERSION="$INPUT_VERSION"
+              OVERRIDE=true
+            else
+              VERSION="$PACKAGE_VERSION"
+              OVERRIDE=false
+            fi
+          fi
+          if [ "$EVENT" != "push" ] && [ "$DRY_RUN" != "true" ]; then
+            echo "::error::Real releases run from a pushed tag, not workflow_dispatch"
+            exit 1
+          fi
+          # Prereleases (anything with a "-") go to the `next` dist-tag.
+          case "$VERSION" in *-*) NPM_TAG=next ;; *) NPM_TAG=latest ;; esac
+          {
+            echo "version=$VERSION"
+            echo "dry_run=$DRY_RUN"
+            echo "npm_tag=$NPM_TAG"
+            echo "override=$OVERRIDE"
+          } >> "$GITHUB_OUTPUT"
+          echo "waavy $VERSION (dry run: $DRY_RUN, npm tag: $NPM_TAG, override: $OVERRIDE)"
+
+  build:
+    name: Test, compile, pack
+    needs: prepare
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - run: bun install --frozen-lockfile
+
+      - name: Apply version override
+        if: needs.prepare.outputs.override == 'true'
+        run: |
+          bun scripts/waavy-sync-versions.ts --version "$VERSION"
+          sed -i "s/^export const WAAVY_VERSION = '.*';/export const WAAVY_VERSION = '$VERSION';/" packages/waavy/src/core/version.ts
+
+      - name: Verify versions are in sync
+        run: bun scripts/waavy-sync-versions.ts --check
+
+      - name: Build, typecheck, test
+        run: |
+          bun run build -- --filter=@bundt/waavy
+          bun run typecheck -- --filter=@bundt/waavy
+          bun run test -- --filter=@bundt/waavy
+
+      - name: Compile every binary
+        working-directory: packages/waavy
+        run: bun build/binaries.ts
+
+      - name: Fixture release for smoke tests
+        working-directory: packages/waavy
+        run: npm/linux-x64/bin/waavy build --root fixtures/basic --out "$RUNNER_TEMP/smoke-release"
+
+      - name: Release archives and checksums
+        working-directory: packages/waavy
+        run: bun build/release-assets.ts "$RUNNER_TEMP/release-assets"
+
+      - name: Pack npm packages
+        working-directory: packages/waavy
+        run: |
+          mkdir -p "$RUNNER_TEMP/npm-packages"
+          for dir in npm/*/ .; do
+            (cd "$dir" && npm pack --pack-destination "$RUNNER_TEMP/npm-packages")
+          done
+          ls -l "$RUNNER_TEMP/npm-packages"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: ${{ runner.temp }}/release-assets
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-packages
+          path: ${{ runner.temp }}/npm-packages
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smoke-release
+          path: ${{ runner.temp }}/smoke-release
+          if-no-files-found: error
+
+  smoke:
+    name: Smoke ${{ matrix.asset }}
+    needs: [prepare, build]
+    runs-on: ${{ matrix.runner }}
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: ubuntu-latest, asset: linux-x64, experimental: false }
+          - { runner: ubuntu-24.04-arm, asset: linux-arm64, experimental: false }
+          - { runner: macos-15, asset: darwin-arm64, experimental: false }
+          - { runner: macos-15-intel, asset: darwin-x64, experimental: false }
+          # musl binaries run inside Alpine (see "Run" below).
+          - { runner: ubuntu-latest, asset: linux-x64-musl, experimental: false }
+          - { runner: ubuntu-24.04-arm, asset: linux-arm64-musl, experimental: false }
+          - { runner: windows-latest, asset: win32-x64, experimental: true }
+    defaults:
+      run:
+        shell: bash
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      ASSET: ${{ matrix.asset }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: assets
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: smoke-release
+          path: smoke-release
+
+      - name: Verify checksum and extract
+        working-directory: assets
+        run: |
+          # macOS has shasum but no sha256sum.
+          if command -v sha256sum >/dev/null; then SHA=(sha256sum); else SHA=(shasum -a 256); fi
+          case "$ASSET" in win32-*) ARCHIVE="waavy-$ASSET.zip" ;; *) ARCHIVE="waavy-$ASSET.tar.gz" ;; esac
+          grep " $ARCHIVE\$" SHA256SUMS | "${SHA[@]}" -c -
+          mkdir -p ../bin
+          if [ "$ARCHIVE" = "waavy-$ASSET.zip" ]; then
+            powershell -Command "Expand-Archive -Path $ARCHIVE -DestinationPath ../bin"
+          else
+            tar -xzf "$ARCHIVE" -C ../bin
+          fi
+
+      - name: Run
+        run: |
+          PROPS='{"label":"smoke","initial":2}'
+          case "$ASSET" in
+            *-musl)
+              docker run --rm -v "$PWD:/w" -w /w alpine:3.20 sh -euc "
+                apk add --no-cache -q libstdc++ libgcc
+                ./bin/waavy --version | tee version.txt
+                ./bin/waavy render --release smoke-release --page counter --props '$PROPS' > page.html"
+              ;;
+            win32-x64)
+              ./bin/waavy.exe --version | tee version.txt
+              ./bin/waavy.exe render --release smoke-release --page counter --props "$PROPS" > page.html
+              ;;
+            *)
+              ./bin/waavy --version | tee version.txt
+              ./bin/waavy render --release smoke-release --page counter --props "$PROPS" > page.html
+              ;;
+          esac
+          grep -q "waavy/$VERSION " version.txt || { echo "::error::expected waavy/$VERSION"; exit 1; }
+          grep -q '<span id="count">2</span>' page.html || { echo "::error::render output is wrong"; cat page.html; exit 1; }
+
+  publish-npm:
+    name: Publish to npm
+    needs: [prepare, smoke]
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write # npm provenance
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      NPM_TAG: ${{ needs.prepare.outputs.npm_tag }}
+      DRY_RUN: ${{ needs.prepare.outputs.dry_run }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: npm-packages
+          path: npm-packages
+
+      # Platform packages first: the main package's optionalDependencies must
+      # be resolvable the moment it is published. Already-published versions
+      # are skipped so a failed run can be re-run.
+      - name: Publish
+        working-directory: npm-packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          FLAGS=(--access public --tag "$NPM_TAG")
+          if [ "$DRY_RUN" = "true" ]; then FLAGS+=(--dry-run); else FLAGS+=(--provenance); fi
+          MAIN="bundt-waavy-$VERSION.tgz"
+          [ -f "$MAIN" ] || { echo "::error::$MAIN not found"; ls; exit 1; }
+          for tarball in $(ls bundt-waavy-*-"$VERSION".tgz) "$MAIN"; do
+            NAME=$(tar -xOzf "$tarball" package/package.json | node -p 'JSON.parse(require("fs").readFileSync(0)).name')
+            if [ "$DRY_RUN" != "true" ] && npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+              echo "$NAME@$VERSION is already published; skipping"
+              continue
+            fi
+            echo "Publishing $NAME@$VERSION ($tarball)"
+            npm publish "$tarball" "${FLAGS[@]}"
+          done
+
+  publish-crate:
+    name: Publish to crates.io
+    needs: [prepare, smoke]
+    runs-on: ubuntu-latest
+    environment: release
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      DRY_RUN: ${{ needs.prepare.outputs.dry_run }}
+      OVERRIDE: ${{ needs.prepare.outputs.override }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Apply version override
+        if: needs.prepare.outputs.override == 'true'
+        run: sed -i "0,/^version = \".*\"/s//version = \"$VERSION\"/" crates/waavy/Cargo.toml
+
+      - name: Verify crate version
+        run: |
+          CRATE_VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "waavy") | .version')
+          [ "$CRATE_VERSION" = "$VERSION" ] || { echo "::error::crate is $CRATE_VERSION, expected $VERSION"; exit 1; }
+
+      - name: Publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            FLAGS=(--dry-run)
+            # The override edits Cargo.toml in this checkout only.
+            if [ "$OVERRIDE" = "true" ]; then FLAGS+=(--allow-dirty); fi
+            cargo publish -p waavy "${FLAGS[@]}"
+          elif cargo info "waavy@$VERSION" --registry crates-io >/dev/null 2>&1; then
+            echo "waavy $VERSION is already on crates.io; skipping"
+          else
+            cargo publish -p waavy
+          fi
+
+  github-release:
+    name: GitHub release
+    needs: [prepare, publish-npm, publish-crate]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      DRY_RUN: ${{ needs.prepare.outputs.dry_run }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: release-assets
+
+      - name: Release notes from CHANGELOG.md
+        run: |
+          # The section for this version: from its "## [x.y.z]" heading to the next "## ".
+          awk -v v="$VERSION" '
+            $0 ~ "^## \\[?" v "\\]?" { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' packages/waavy/CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "See packages/waavy/CHANGELOG.md." > notes.md
+          cat notes.md
+
+      - name: Create release
+        run: |
+          TAG="@bundt/waavy@$VERSION"
+          FLAGS=(--title "@bundt/waavy $VERSION" --notes-file notes.md)
+          case "$VERSION" in *-*) FLAGS+=(--prerelease) ;; esac
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "Dry run: would create release $TAG ${FLAGS[*]} with:"
+            ls -l release-assets
+          else
+            gh release create "$TAG" release-assets/* "${FLAGS[@]}"
+          fi

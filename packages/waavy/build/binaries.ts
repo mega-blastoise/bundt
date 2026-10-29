@@ -14,7 +14,7 @@
  * the quick path: it writes `dist/bin/waavy` for the host only.
  */
 
-import { mkdir } from 'node:fs/promises';
+import { copyFile, mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 
@@ -60,6 +60,8 @@ for (const target of targets) {
   await mkdir(outDir, { recursive: true });
   const outfile = join(outDir, target.fileName);
   await compileBinary({ outfile, bunTarget: target.bunTarget });
+  // Platform packages are published from their directory; give each the license.
+  if (target.npm !== undefined) await copyFile(join(packageRoot, 'LICENSE'), join(outDir, '..', 'LICENSE'));
   console.log(`Compiled ${target.asset.padEnd(18)} ${target.bunTarget.padEnd(24)} → ${target.outDir}/${target.fileName}`);
 }
 
