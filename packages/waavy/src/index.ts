@@ -1,20 +1,18 @@
-import cac from "cac";
-import { setupBundleAction } from "./cli/BundleAction";
-import { setupPrerenderAction } from "./cli/PreRenderAction";
-import { setupRenderAction } from "./cli/RenderAction";
-import { setupStaticSiteGenAction } from "./cli/SSGAction";
-import ProcessManager from "./utils/models/ProcessManager";
-import { getVersion } from "./utils";
+/**
+ * `@bundt/waavy` — configuration helper and protocol types.
+ *
+ * - Use {@link defineConfig} in `waavy.config.ts`.
+ * - Import the request/error types when talking to waavy from TypeScript.
+ * - For in-process rendering from a Bun server, see `@bundt/waavy/server`.
+ */
 
-ProcessManager.setupHandlers();
-
-const cli = cac("waavy");
-cli.version(getVersion() as string);
-
-setupBundleAction(cli);
-setupPrerenderAction(cli);
-setupStaticSiteGenAction(cli);
-setupRenderAction(cli);
-
-cli.help();
-cli.parse();
+export { defineConfig, type WaavyConfig, type WaavyConfigInput } from './core/config';
+export { ERROR_CODES, type ErrorBody, type ErrorCode } from './core/errors';
+export {
+  type DocumentOptions,
+  type PageProps,
+  PROTOCOL_VERSION,
+  type RenderRequest,
+  type RenderRequestInput
+} from './core/protocol';
+export { WAAVY_VERSION } from './core/version';

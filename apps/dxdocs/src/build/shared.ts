@@ -2,11 +2,11 @@ import { resolve, relative, basename, extname, dirname } from 'path';
 import { renderToString } from 'react-dom/server';
 import { prerender } from 'react-dom/static';
 import React from 'react';
-import { Callout, Card, CardGrid, Steps, Step } from '../mdx/components.tsx';
+import { Callout, Card, CardGrid, Steps, Step, Icon } from '../mdx/components.tsx';
 import { DocLayout } from '../theme/layout.tsx';
-import type { VoidConfig } from '../config/schema.ts';
+import type { VoidConfig, CoverpageConfig } from '../config/schema.ts';
 
-const mdxComponents = { Callout, Card, CardGrid, Steps, Step };
+const mdxComponents = { Callout, Card, CardGrid, Steps, Step, Icon };
 
 export async function resolveThemeStylesPath(): Promise<string> {
   const candidates = [
@@ -129,7 +129,7 @@ function htmlHead(title: string, description: string, cssContent: string): strin
   <meta name="description" content="${escapeHtml(description)}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>${cssContent}</style>
 </head>
 <body>
@@ -148,6 +148,7 @@ export async function prerenderPage(opts: {
   currentPath: string;
   pageTitle: string;
   cssContent: string;
+  coverpage?: CoverpageConfig;
   tail?: string;
 }): Promise<PrerenderResult> {
   const title = opts.pageTitle
@@ -161,6 +162,7 @@ export async function prerenderPage(opts: {
     config: opts.config,
     currentPath: opts.currentPath,
     tocHtml,
+    coverpage: opts.coverpage,
     children: React.createElement('div', {
       dangerouslySetInnerHTML: { __html: processedHtml }
     })

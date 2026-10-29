@@ -1,1 +1,0 @@
-export { setupStaticSiteGenAction } from "./setup";

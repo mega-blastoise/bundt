@@ -1,11 +1,11 @@
 {
-  "extends": "./tsconfig.json",
+  "extends": "../../tsconfig.build.json",
   "compilerOptions": {
-    "emitDeclarationOnly": true,
-    "declaration": true,
-    "noEmit": false,
-    "outDir": "./out"
+    "declarationDir": "./dist",
+    "rootDir": "./src",
+    "lib": ["ESNext", "DOM", "DOM.Iterable", "DOM.AsyncIterable"],
+    "types": ["bun"]
   },
   "include": ["src"],
-  "exclude": ["node_modules", "out", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**"]
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts", "src/**/*.test.tsx", "src/**/__tests__/**"]
 }

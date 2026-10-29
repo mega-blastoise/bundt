@@ -18,7 +18,7 @@ Scope to one package: `turbo run build --filter=@bundt/cleo`
 ```
 apps/          Deployable CLIs and applications (published with bin entries)
 packages/      Publishable npm libraries
-crates/        Rust crates (Cargo workspace, currently empty)
+crates/        Rust crates (Cargo workspace): waavy
 internal/      Private shared packages (not published to npm)
 ```
 
@@ -31,6 +31,7 @@ internal/      Private shared packages (not published to npm)
 | `apps/ollama` | `@bundt/ollama` | Local LLM management CLI (Ollama + Claude Code) |
 | `packages/hateoas` | `@bundt/hateoas` | React HATEOAS framework (client, server, protocol, react) |
 | `packages/waavy` | `@bundt/waavy` | React SSR for non-JavaScript server environments |
+| `crates/waavy` | `waavy` (crates.io) | Rust client for waavy (`Client` over unix socket/TCP, one-shot) |
 | `packages/signals` | `@bundt/signals` | Signal graph abstractions (placeholder, not yet implemented) |
 | `internal/shared` | `@bundt/internal-shared` | Cross-package types and utilities (private, populate on observed duplication only) |
 
@@ -77,7 +78,6 @@ Libraries (`packages/`) may use source-level exports (like hateoas) or compiled 
 - **Zod 4** for validation schemas (dxdocs, cleo)
 - **cac** for CLI argument parsing (cleo, ollama, waavy)
 - **picocolors** for terminal colors
-- **debug** for debug logging (waavy)
 
 ### External Dependencies
 
@@ -120,13 +120,18 @@ Libraries (`packages/`) may use source-level exports (like hateoas) or compiled 
 
 ### waavy (`packages/waavy`)
 
-- Most complex package — React SSR framework with CLI, server, and build tooling
-- Path aliases: `@/*` -> `./src/*`, `@pkg/config` -> `./config/config.ts`, `@pkg/metadata` -> `./package.json`
-- Has cross-platform executable building (`build/utils/executable.ts`)
-- Server.ts is WIP — uses simplified Bun.serve types with `@ts-expect-error` suppression
-- Known issues documented in `.claude/specs/FAST_FOLLOWS.md` (12 items)
-- Uses both `commander` and `cac` (dual dep to be resolved)
-- Uses both `debug` and `printf` for logging (to be unified)
+- Source of truth for waavy (standalone `nicholasgalante1997/waavy`, `waavy-rs`, `create-waavy-app` are superseded)
+- **Target architecture and redesign plan: `.claude/specs/waavy/ARCHITECTURE.md`** — read before changing waavy
+- React SSR engine for non-JS backends: `waavy build` (releases), `waavy render` (one-shot), `waavy serve` (warm HTTP renderer), cac CLI, compiled binary
+- Layers in `src/`: `core/` (runtime-agnostic) · `build/` · `runtime/` · `transport/` · `cli/` · `browser/`; `src/layers.test.ts` enforces the dependency rules
+- Tests: colocated unit tests in `src/`, integration/CLI contract tests in `test/` (need `bun run build` first), Playwright in `e2e/` (`test:e2e`)
+- Fixture project `packages/waavy/fixtures/basic` is a workspace (root `workspaces` includes `packages/waavy/fixtures/*`)
+- Compiled binaries must keep `--compile-autoload-package-json` (`build/binary.ts`), or user configs can't resolve packages
+- `waavy serve` is built on `node:http`, not `Bun.serve` (only node:http can abort one streaming response); see `transport/http-handler.ts` for Bun node:http workarounds
+- Host protocol contract: `packages/waavy/docs/PROTOCOL.md`; Rust client in `crates/waavy` (`eval "$(scripts/waavy-rs-prepare.sh)" && cargo test -p waavy --all-features`; `Supervisor` behind feature `supervisor`)
+- Distribution: the npm `waavy` command is a Node launcher (`src/launcher/` → `dist/launcher.js`, `bin/waavy.js`) that runs the native binary from optional dependency `@bundt/waavy-<os>-<cpu>` (`packages/waavy/npm/*`, not workspaces); `bun build/binaries.ts` cross-compiles all targets (musl = GitHub release assets only)
+- Versions of the npm package, platform packages and crate move together: `bun scripts/waavy-sync-versions.ts --version X` (+ `WAAVY_VERSION` in `src/core/version.ts`); `test/platform-packages.test.ts` fails on drift
+- Release: push tag `@bundt/waavy@<version>` → `.github/workflows/release-waavy.yml` (generic `release.yml` skips waavy); dry run via workflow_dispatch; `scripts/waavy-install-test.sh` checks a packed install locally
 
 ### signals (`packages/signals`)
 

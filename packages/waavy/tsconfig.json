@@ -1,20 +1,24 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "lib": ["ESNext", "DOM"],
-    "types": ["bun", "node"],
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "paths": {
-      "@/*": ["./src/*"],
-      "@pkg/config": ["./config/config.ts"],
-      "@pkg/metadata": ["./package.json"]
-    },
-    "outDir": "./out",
-    "emitDeclarationOnly": true,
-    "declaration": true,
-    "noEmit": false
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable",
+      "DOM.AsyncIterable"
+    ],
+    "types": [
+      "bun"
+    ],
+    "resolveJsonModule": true
   },
-  "include": ["build", "config/config.ts", "src", "scripts"],
-  "exclude": ["node_modules", "out", "**/*.test.ts", "**/*.spec.ts"]
+  "include": [
+    "src",
+    "build",
+    "e2e"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

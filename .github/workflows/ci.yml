@@ -67,3 +67,165 @@ jobs:
           else
             bun run test
           fi
+
+      # waavy's real-browser hydration tests (packages/waavy/e2e). They need
+      # the package build from the steps above and a Playwright Chromium.
+      - name: Install Playwright Chromium (waavy e2e)
+        working-directory: packages/waavy
+        run: bunx playwright install --with-deps chromium
+
+      - name: Waavy e2e
+        working-directory: packages/waavy
+        run: |
+          bun run build
+          bun run test:e2e
+
+  # crates/waavy against the real compiled waavy binary, plus the Rust-host
+  # (axum) browser test. See .claude/specs/waavy/WAAVY_P2_SERVE_RS.md.
+  waavy-rs:
+    name: waavy Rust client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('crates/**/Cargo.toml') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build waavy binary and fixture release
+        run: scripts/waavy-rs-prepare.sh --env-file >> "$GITHUB_ENV"
+
+      - name: Format
+        run: cargo fmt -p waavy --check
+
+      - name: Clippy
+        run: |
+          cargo clippy -p waavy --all-targets --all-features -- -D warnings
+          cargo clippy -p waavy --no-default-features -- -D warnings
+
+      - name: Test
+        run: cargo test -p waavy --all-features
+
+      - name: Docs
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc -p waavy --all-features --no-deps
+
+      - name: Install Playwright Chromium
+        working-directory: packages/waavy
+        run: bunx playwright install --with-deps chromium
+
+      - name: Rust host browser test (axum)
+        working-directory: packages/waavy
+        env:
+          WAAVY_E2E_AXUM: "1"
+        run: bun test e2e/axum.test.ts
+
+  # waavy on every supported platform (P3 T6): host binary, the CLI/serve/
+  # launcher contract tests, and the install test (npm, bun, bare binary).
+  # Intel macOS uses macos-15-intel: the macos-13 image named in the P3 spec
+  # has been retired by GitHub.
+  waavy-matrix:
+    name: waavy ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, macos-15-intel]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-${{ runner.arch }}-
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build @bundt/waavy
+        run: bun run build -- --filter=@bundt/waavy
+
+      - name: Compile host binary
+        working-directory: packages/waavy
+        run: |
+          bun run build:binary
+          bun build/binaries.ts --host-only
+
+      - name: Contract tests (CLI, serve, launcher, packaging)
+        working-directory: packages/waavy
+        run: bun test test/cli.test.ts test/serve.test.ts test/launcher.test.ts test/platform-packages.test.ts test/package-contents.test.ts
+
+      - name: Install test
+        run: scripts/waavy-install-test.sh --skip-build
+
+  # Windows is experimental (ARCH D11): build, --version, and a TCP serve
+  # smoke test. Failures are reported but never block CI.
+  waavy-windows:
+    name: waavy windows (experimental)
+    runs-on: windows-latest
+    continue-on-error: true
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3"
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build @bundt/waavy and the binary
+        run: |
+          bun run build -- --filter=@bundt/waavy
+          cd packages/waavy && bun run build:binary
+
+      - name: Smoke test
+        working-directory: packages/waavy
+        run: |
+          BIN=dist/bin/waavy.exe
+          "$BIN" --version
+          "$BIN" build --root fixtures/basic --out "$RUNNER_TEMP/release"
+          "$BIN" serve --release "$RUNNER_TEMP/release" --port 4100 &
+          for _ in $(seq 1 50); do curl -fsS http://127.0.0.1:4100/health && break; sleep 0.2; done
+          curl -fsS -X POST http://127.0.0.1:4100/render \
+            -H 'content-type: application/json' \
+            -d '{"v":1,"page":"counter","props":{"label":"win","initial":1}}' | grep -q 'id="waavy-root"'
+          kill %1

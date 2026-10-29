@@ -1,0 +1,50 @@
+[package]
+name = "waavy"
+version = "0.3.0"
+edition = "2021"
+rust-version = "1.85"
+license = "MIT"
+description = "Render React pages from Rust with the waavy renderer: HTTP client, one-shot mode, and a process supervisor."
+repository = "https://github.com/mega-blastoise/bundt"
+homepage = "https://github.com/mega-blastoise/bundt/tree/main/crates/waavy"
+documentation = "https://docs.rs/waavy"
+readme = "README.md"
+keywords = ["react", "ssr", "html", "render", "hydration"]
+categories = ["web-programming", "template-engine"]
+# Library sources, the example, and docs only: tests need the waavy binary
+# and a fixture release, which are not part of the crate.
+include = ["src/**/*.rs", "examples/**/*.rs", "README.md", "LICENSE", "Cargo.toml"]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[features]
+default = ["oneshot"]
+# Spawn `waavy render --stdin` instead of talking to a running server.
+oneshot = ["tokio/process"]
+# Run and supervise `waavy serve` from the host process (unix only).
+supervisor = ["tokio/process", "tokio/sync", "tokio/macros", "dep:libc"]
+
+[dependencies]
+bytes = "1.12.1"
+futures-core = "0.3.34"
+http-body-util = "0.1.5"
+hyper = { version = "1.12.0", features = ["client", "http1"] }
+hyper-util = { version = "0.1.20", features = ["tokio"] }
+libc = { version = "0.2", optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+# Not the workspace tokio: that enables "full", which a library must not force on its users.
+tokio = { version = "1", features = ["net", "io-util", "time", "rt"] }
+
+[dev-dependencies]
+libc = "0.2"
+axum = "0.8.9"
+jsonschema = { version = "0.33.0", default-features = false }
+tokio = { workspace = true, features = ["full"] }
+tower-http = { version = "0.7.1", features = ["fs"] }
+
+[[test]]
+name = "supervisor"
+required-features = ["supervisor"]

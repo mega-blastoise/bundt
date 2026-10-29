@@ -8,7 +8,7 @@
 
 The server assembles a **Frame**, streams it to the browser via React 19 `renderToReadableStream`, and handles ongoing interactions via WebSocket.
 
-The name is a direct response to "Next" — `prev` is built for the AI-native web, where the UI itself is a response.
+The name is a direct response to "next.js", which was built for the last generation of the web — `prev` is built for the AI-native web, where the UI itself _is_ a response.
 
 ## Why prev?
 

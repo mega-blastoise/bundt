@@ -6,7 +6,9 @@
   "workspaces": [
     "apps/*",
     "packages/*",
-    "internal/*"
+    "internal/*",
+    "websites/*",
+    "packages/waavy/fixtures/*"
   ],
   "engines": {
     "bun": ">=1.3"
@@ -24,9 +26,6 @@
     "docs:dev": "cd docs && bun run ../apps/dxdocs/src/cli.ts dev",
     "docs:build": "cd docs && bun run ../apps/dxdocs/src/cli.ts build",
     "create-package": "bun scripts/create-package.ts"
-  },
-  "overrides": {
-    "@bit-context-protocol/driver": "file:///home/nicks-dgx/dev/.RFCs/bit-context-protocol/packages/driver"
   },
   "devDependencies": {
     "@inquirer/prompts": "^8.3.0",

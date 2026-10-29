@@ -24,6 +24,12 @@ await concurrent_build(
     target: 'bun'
   } as Bun.BuildConfig,
   {
+    ...serverConfig,
+    entrypoints: ['src/server-exports.ts'],
+    naming: { entry: 'server-exports.js' },
+    target: 'bun'
+  } as Bun.BuildConfig,
+  {
     ...clientConfig,
     entrypoints: ['src/client/index.ts'],
     naming: { entry: 'client.js' },
@@ -36,3 +42,6 @@ await concurrent_build(
     target: 'bun'
   } as Bun.BuildConfig
 );
+
+// Generate .d.ts declaration files
+await Bun.$`bunx tsc --declaration --emitDeclarationOnly --outDir dist --project tsconfig.build.json`;

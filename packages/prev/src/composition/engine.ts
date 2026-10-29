@@ -20,6 +20,17 @@ export interface CompositionEngine {
   mutateFrame(frame: Frame, mutations: FrameMutation[], resolvedData: Map<string, Record<string, unknown>>): Promise<MutateFrameResult & { frame: Frame; resolvedData: Map<string, Record<string, unknown>> }>;
 }
 
+const PLACEHOLDER_RE = /^__resolve_(\d+)__$/;
+
+function resolvePlaceholder(id: string, instances: FragmentInstance[]): string {
+  const match = PLACEHOLDER_RE.exec(id);
+  if (!match) return id;
+  const index = Number(match[1]);
+  const instance = instances[index];
+  if (!instance) throw new Error(`Binding placeholder "${id}" references index ${index}, but only ${instances.length} fragments exist`);
+  return instance.instanceId;
+}
+
 export function createCompositionEngine(
   fragmentRegistry: FragmentRegistry,
   dataSourceRegistry: DataSourceRegistry
@@ -58,7 +69,12 @@ export function createCompositionEngine(
     const fetchPlan = dataBinder.buildFetchPlan(request, instances);
     const resolvedData = await dataBinder.executeFetchPlan(fetchPlan);
 
-    const bindings = request.bindings ?? [];
+    // Resolve __resolve_N__ placeholder IDs in bindings to actual instance IDs
+    const bindings = (request.bindings ?? []).map((binding) => ({
+      ...binding,
+      sourceFragmentInstanceId: resolvePlaceholder(binding.sourceFragmentInstanceId, instances),
+      targetFragmentInstanceId: resolvePlaceholder(binding.targetFragmentInstanceId, instances),
+    }));
     const resolvedBindings = resolveBindings(bindings, instances, fragmentRegistry);
 
     const frame: Frame = {
