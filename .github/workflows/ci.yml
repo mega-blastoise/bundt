@@ -94,7 +94,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy
+          components: clippy, rustfmt
 
       - name: Cache Bun dependencies
         uses: actions/cache@v4
@@ -119,6 +119,9 @@ jobs:
 
       - name: Build waavy binary and fixture release
         run: scripts/waavy-rs-prepare.sh --env-file >> "$GITHUB_ENV"
+
+      - name: Format
+        run: cargo fmt -p waavy --check
 
       - name: Clippy
         run: |

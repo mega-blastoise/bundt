@@ -74,8 +74,11 @@ impl RestartPolicy {
 mod tests {
     use super::*;
 
-    const SETTINGS: RestartSettings =
-        RestartSettings { initial_backoff: Duration::from_millis(100), max_backoff: Duration::from_secs(1), max_restarts: 5 };
+    const SETTINGS: RestartSettings = RestartSettings {
+        initial_backoff: Duration::from_millis(100),
+        max_backoff: Duration::from_secs(1),
+        max_restarts: 5,
+    };
 
     fn ms(value: u64) -> Duration {
         Duration::from_millis(value)
@@ -86,10 +89,7 @@ mod tests {
         let mut policy = RestartPolicy::new(RestartSettings { max_restarts: 100, ..SETTINGS });
         let start = Instant::now();
         let delays: Vec<_> = (0..6).map(|_| policy.on_exit(start, start)).collect();
-        assert_eq!(
-            delays,
-            [100, 200, 400, 800, 1000, 1000].map(|value| Decision::RestartAfter(ms(value))).to_vec()
-        );
+        assert_eq!(delays, [100, 200, 400, 800, 1000, 1000].map(|value| Decision::RestartAfter(ms(value))).to_vec());
     }
 
     #[test]

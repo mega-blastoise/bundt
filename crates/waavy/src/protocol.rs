@@ -297,7 +297,8 @@ mod tests {
         for code in ErrorCode::KNOWN {
             assert_eq!(ErrorCode::from(code.as_str()), code);
         }
-        let body: ErrorBody = serde_json::from_value(json!({ "error": { "code": "NEW_CODE", "message": "m" } })).unwrap();
+        let body: ErrorBody =
+            serde_json::from_value(json!({ "error": { "code": "NEW_CODE", "message": "m" } })).unwrap();
         assert_eq!(body.error.code, ErrorCode::Unknown("NEW_CODE".into()));
         assert_eq!(body.error.code.exit_status(), None);
     }

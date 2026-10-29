@@ -164,14 +164,18 @@ async fn oneshot_matches_the_server() {
 
     let error = waavy::oneshot::render(&bin, &release, &RenderRequest::new("broken")).await.unwrap_err();
     assert_eq!(error.code(), Some(&ErrorCode::RenderFailed));
-    assert_eq!(waavy::oneshot::render(&bin, &release, &RenderRequest::new("boundary")).await.unwrap().recoverable_errors, 1);
+    assert_eq!(
+        waavy::oneshot::render(&bin, &release, &RenderRequest::new("boundary")).await.unwrap().recoverable_errors,
+        1
+    );
 }
 
 /// The real waavy HTTP transport destroying a stream mid-response must reach
 /// hyper as an interrupted document (spike P2-S1, end to end). Needs `bun`.
 #[tokio::test]
 async fn a_real_late_stream_failure_is_interrupted() {
-    let script = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../packages/waavy/test/support/late-fail-server.ts");
+    let script =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../packages/waavy/test/support/late-fail-server.ts");
     let dir = TempDir::new();
     let socket = dir.path().join("late.sock");
     let Ok(_child) = Command::new("bun")

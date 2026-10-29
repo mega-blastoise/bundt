@@ -81,7 +81,8 @@ fn parse_stderr(stderr: &str) -> Result<StderrEvents> {
             events.warnings += 1;
         } else if value.get("error").is_some() {
             events.error = Some(
-                serde_json::from_value(value).map_err(|error| Error::Protocol(format!("invalid error line: {error}")))?,
+                serde_json::from_value(value)
+                    .map_err(|error| Error::Protocol(format!("invalid error line: {error}")))?,
             );
         }
     }

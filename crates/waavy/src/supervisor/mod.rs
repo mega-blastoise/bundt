@@ -440,7 +440,9 @@ fn default_hook(event: &Event<'_>) {
         Event::RestartFailed { error } => {
             serde_json::json!({ "type": "supervisor", "event": "restart_failed", "message": error.to_string() })
         }
-        Event::GaveUp { restarts } => serde_json::json!({ "type": "supervisor", "event": "gave_up", "restarts": restarts }),
+        Event::GaveUp { restarts } => {
+            serde_json::json!({ "type": "supervisor", "event": "gave_up", "restarts": restarts })
+        }
     };
     eprintln!("{line}");
 }

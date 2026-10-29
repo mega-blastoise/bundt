@@ -46,9 +46,8 @@ async fn home(State(client): State<Client>) -> Response {
 }
 
 async fn counter(State(client): State<Client>, Path(initial): Path<u32>) -> Response {
-    let request = RenderRequest::new("counter")
-        .props(json!({ "label": "Clicks", "initial": initial }))
-        .title("Counter");
+    let request =
+        RenderRequest::new("counter").props(json!({ "label": "Clicks", "initial": initial })).title("Counter");
     render(&client, request).await
 }
 

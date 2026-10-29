@@ -89,9 +89,8 @@ impl Client {
             let response = self.post_render(&request.with_stream(false)).await?;
             let response = ensure_success(response).await?;
             let build_id = header(&response, BUILD_ID_HEADER);
-            let recoverable_errors = header(&response, RECOVERABLE_ERRORS_HEADER)
-                .and_then(|value| value.parse().ok())
-                .unwrap_or(0);
+            let recoverable_errors =
+                header(&response, RECOVERABLE_ERRORS_HEADER).and_then(|value| value.parse().ok()).unwrap_or(0);
             let body = response.into_body().collect().await.map_err(Error::from_body)?.to_bytes();
             let html = String::from_utf8(body.to_vec()).map_err(|_| Error::Protocol("response is not UTF-8".into()))?;
             Ok(Rendered { html, build_id, recoverable_errors })
@@ -167,9 +166,8 @@ async fn send_over<S>(stream: S, request: Request<Full<Bytes>>) -> Result<Respon
 where
     S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
 {
-    let (mut sender, connection) = hyper::client::conn::http1::handshake(TokioIo::new(stream))
-        .await
-        .map_err(Error::Http)?;
+    let (mut sender, connection) =
+        hyper::client::conn::http1::handshake(TokioIo::new(stream)).await.map_err(Error::Http)?;
     // The connection task drives I/O until the response body is consumed.
     tokio::spawn(async move {
         let _ = connection.await;
@@ -186,10 +184,9 @@ async fn ensure_success(response: Response<Incoming>) -> Result<Response<Incomin
     let body = response.into_body().collect().await.map_err(Error::from_body)?.to_bytes();
     match serde_json::from_slice::<ErrorBody>(&body) {
         Ok(error) => Err(error.error.into()),
-        Err(_) => Err(Error::Protocol(format!(
-            "status {status} with a non-waavy body: {}",
-            String::from_utf8_lossy(&body)
-        ))),
+        Err(_) => {
+            Err(Error::Protocol(format!("status {status} with a non-waavy body: {}", String::from_utf8_lossy(&body))))
+        }
     }
 }
 
