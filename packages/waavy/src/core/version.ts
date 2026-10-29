@@ -8,4 +8,4 @@
  */
 
 /** The version of `@bundt/waavy` this source tree represents. */
-export const WAAVY_VERSION = '0.3.0-dev.0';
+export const WAAVY_VERSION = '0.3.0';

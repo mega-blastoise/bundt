@@ -1,6 +1,6 @@
 {
   "name": "@bundt/waavy-win32-x64",
-  "version": "0.3.0-dev.0",
+  "version": "0.3.0",
   "description": "The waavy binary for win32-x64 (experimental). Installed automatically by @bundt/waavy.",
   "license": "MIT",
   "repository": {

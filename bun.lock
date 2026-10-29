@@ -164,9 +164,9 @@
     },
     "packages/waavy": {
       "name": "@bundt/waavy",
-      "version": "0.3.0-dev.0",
+      "version": "0.3.0",
       "bin": {
-        "waavy": "./bin/waavy.ts",
+        "waavy": "./bin/waavy.js",
       },
       "dependencies": {
         "cac": "^7.0.0",
@@ -185,11 +185,11 @@
         "typescript": "^5.9.0",
       },
       "optionalDependencies": {
-        "@bundt/waavy-darwin-arm64": "0.3.0-dev.0",
-        "@bundt/waavy-darwin-x64": "0.3.0-dev.0",
-        "@bundt/waavy-linux-arm64": "0.3.0-dev.0",
-        "@bundt/waavy-linux-x64": "0.3.0-dev.0",
-        "@bundt/waavy-win32-x64": "0.3.0-dev.0",
+        "@bundt/waavy-darwin-arm64": "0.3.0",
+        "@bundt/waavy-darwin-x64": "0.3.0",
+        "@bundt/waavy-linux-arm64": "0.3.0",
+        "@bundt/waavy-linux-x64": "0.3.0",
+        "@bundt/waavy-win32-x64": "0.3.0",
       },
       "peerDependencies": {
         "react": "^19.0.0",

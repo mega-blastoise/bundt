@@ -1,6 +1,6 @@
 {
   "name": "@bundt/waavy-linux-arm64",
-  "version": "0.3.0-dev.0",
+  "version": "0.3.0",
   "description": "The waavy binary for linux-arm64. Installed automatically by @bundt/waavy.",
   "license": "MIT",
   "repository": {
