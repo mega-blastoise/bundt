@@ -1,7 +1,10 @@
 /**
- * Compiles the `waavy` CLI into a standalone executable for the host
- * platform: `dist/bin/waavy` (`waavy.exe` on Windows). Cross-platform
- * targets are added in Phase 3 (`build/binaries.ts`).
+ * Compiles the `waavy` CLI into a standalone executable.
+ *
+ * Run directly (`bun run build:binary`) it builds the host platform's
+ * binary at `dist/bin/waavy` (`waavy.exe` on Windows) for local development
+ * and tests. `build/binaries.ts` reuses `compileBinary` for the
+ * cross-platform distribution builds.
  *
  * The CLI never imports React (releases bundle their own), so the binary is
  * fully self-contained.
@@ -21,7 +24,24 @@ import { join, resolve } from 'node:path';
 export const COMPILE_FLAGS = ['--compile-autoload-package-json', '--compile-autoload-tsconfig'] as const;
 
 const packageRoot = resolve(import.meta.dir, '..');
-const outfile = join(packageRoot, 'dist', 'bin', process.platform === 'win32' ? 'waavy.exe' : 'waavy');
+const CLI_ENTRY = join(packageRoot, 'src/cli/main.ts');
 
-await Bun.$`bun build --compile --minify ${COMPILE_FLAGS} ${join(packageRoot, 'src/cli/main.ts')} --outfile ${outfile}`;
-console.log(`Compiled ${outfile}`);
+/** Options for one compile. */
+export type CompileOptions = {
+  /** Absolute output path of the executable. */
+  outfile: string;
+  /** Bun `--target` (e.g. `bun-linux-arm64`); the host platform when omitted. */
+  bunTarget?: string;
+};
+
+/** Compiles the CLI entry into a single executable. */
+export async function compileBinary(options: CompileOptions): Promise<void> {
+  const target = options.bunTarget === undefined ? [] : [`--target=${options.bunTarget}`];
+  await Bun.$`bun build --compile --minify ${COMPILE_FLAGS} ${target} ${CLI_ENTRY} --outfile ${options.outfile}`;
+}
+
+if (import.meta.main) {
+  const outfile = join(packageRoot, 'dist', 'bin', process.platform === 'win32' ? 'waavy.exe' : 'waavy');
+  await compileBinary({ outfile });
+  console.log(`Compiled ${outfile}`);
+}

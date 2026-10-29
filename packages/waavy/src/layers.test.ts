@@ -6,6 +6,8 @@
  *   cli → {transport, build, runtime, core} · transport → {runtime, core}
  *   runtime → core · build → core · browser → core (DOM contract only)
  *   core → nothing outside core except zod
+ *   launcher → nothing outside launcher, node: built-ins only (it runs under
+ *   plain Node before any binary exists)
  *
  * Package entry files at the `src/` root are checked individually.
  */
@@ -25,6 +27,7 @@ const INTERNAL_RULES: Readonly<Record<string, readonly string[]>> = {
   transport: ['core', 'runtime', 'transport'],
   cli: ['core', 'build', 'runtime', 'transport', 'cli'],
   browser: ['browser', 'core/constants', 'core/data-island'],
+  launcher: ['launcher'],
   'index.ts': ['core'],
   'server.ts': ['core', 'runtime'],
   'browser.ts': ['browser'],
@@ -38,6 +41,7 @@ const INTERNAL_RULES: Readonly<Record<string, readonly string[]>> = {
 const EXTERNAL_RULES: Readonly<Record<string, readonly string[] | undefined>> = {
   core: ['zod'],
   browser: ['react', 'react-dom/client'],
+  launcher: ['node:child_process', 'node:module', 'node:os', 'node:path', 'node:process'],
   'entry-server.ts': ['react', 'react-dom/server']
 };
 

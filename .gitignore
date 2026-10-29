@@ -32,3 +32,6 @@ coverage/
 
 # Misc
 *.log
+
+# waavy: cross-compiled binaries inside the committed platform packages
+packages/waavy/npm/*/bin/
