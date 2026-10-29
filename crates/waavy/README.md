@@ -10,14 +10,31 @@ the waavy renderer:
 
 - **`Client`** connects to a running `waavy serve` over a unix socket or TCP
   (~0.1 ms overhead per render). Recommended for production.
+- **`Supervisor`** starts `waavy serve` from your process, restarts it if it
+  crashes, and stops it gracefully (feature `supervisor`, unix only).
 - **`oneshot::render`** runs the `waavy` executable once per render
   (~40 ms, feature `oneshot`, on by default). No process to manage.
 
-> Status: `0.3.0-dev`. Install as a git dependency until 0.3.0 is published:
->
-> ```toml
-> waavy = { git = "https://github.com/mega-blastoise/bundt", branch = "waavy/r2" }
-> ```
+```toml
+[dependencies]
+waavy = "0.3"
+# or, to supervise the renderer from your process:
+waavy = { version = "0.3", features = ["supervisor"] }
+```
+
+| Feature | Default | Adds |
+|---|---|---|
+| `oneshot` | yes | `oneshot::render` (spawns `waavy render --stdin`) |
+| `supervisor` | no | `Supervisor` (unix only) |
+
+Minimum supported Rust version: 1.85. The crate version tracks the
+`@bundt/waavy` npm package; use the same minor version of both.
+
+You also need the `waavy` executable: `npm i @bundt/waavy` in your frontend
+project (it installs `node_modules/@bundt/waavy-<os>-<cpu>/bin/waavy`), or
+download it from the
+[GitHub releases](https://github.com/mega-blastoise/bundt/releases) (including
+Linux musl builds).
 
 ## Setup
 
@@ -60,6 +77,27 @@ while let Some(chunk) = stream.next().await {
 }
 ```
 
+Supervised (the renderer is a child of your server):
+
+```rust
+use waavy::{RenderRequest, Supervisor};
+
+let supervisor = Supervisor::builder()
+    .binary("/usr/local/bin/waavy")
+    .release("dist/waavy")
+    .socket("/run/waavy.sock")
+    .spawn()                       // resolves once /health answers
+    .await?;
+let page = supervisor.client().render(&RenderRequest::new("home")).await?;
+// on shutdown: SIGTERM, wait for in-flight renders, SIGKILL after 15 s
+supervisor.shutdown().await?;
+```
+
+Restarts use exponential backoff (100 ms → 5 s) and stop after 10 restarts
+in a minute (`Status::Failed`); renders during a restart fail with the
+retryable `Error::Connect`. Renderer stderr lines and supervisor events go to
+`on_event` (default: JSON lines on your stderr).
+
 One-shot:
 
 ```rust
@@ -93,7 +131,7 @@ WAAVY_SOCKET=/tmp/waavy.sock cargo run -p waavy --example axum
 ## Tests
 
 ```sh
-eval "$(scripts/waavy-rs-prepare.sh)" && cargo test -p waavy
+eval "$(scripts/waavy-rs-prepare.sh)" && cargo test -p waavy --all-features
 ```
 
 Integration tests run against the real compiled binary and skip (with a

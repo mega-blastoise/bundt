@@ -2,14 +2,21 @@
 name = "waavy"
 version = "0.3.0"
 edition = "2021"
-rust-version = "1.80"
+rust-version = "1.85"
 license = "MIT"
-description = "Rust client for the waavy React renderer: render React pages from Rust over HTTP or one-shot."
+description = "Render React pages from Rust with the waavy renderer: HTTP client, one-shot mode, and a process supervisor."
 repository = "https://github.com/mega-blastoise/bundt"
 homepage = "https://github.com/mega-blastoise/bundt/tree/main/crates/waavy"
+documentation = "https://docs.rs/waavy"
 readme = "README.md"
 keywords = ["react", "ssr", "html", "render", "hydration"]
 categories = ["web-programming", "template-engine"]
+# Library sources, the example, and docs only: tests need the waavy binary
+# and a fixture release, which are not part of the crate.
+include = ["src/**/*.rs", "examples/**/*.rs", "README.md", "LICENSE", "Cargo.toml"]
+
+[package.metadata.docs.rs]
+all-features = true
 
 [features]
 default = ["oneshot"]
