@@ -5,6 +5,7 @@
  * Produces `dist/`:
  * - `index.js`, `server.js`, `entry-server.js`, `cli.js` — Bun-target bundles;
  * - `browser.js` — browser-target bundle used by generated client entries;
+ * - `launcher.js` — Node-target npm launcher run by `bin/waavy.js`;
  * - `protocol.schema.json` — JSON Schema generated from the protocol schemas.
  * Declarations are emitted separately by `tsc -p tsconfig.build.json`.
  *
@@ -30,7 +31,8 @@ const BUNDLES: readonly Bundle[] = [
   { entry: 'src/server.ts', output: 'server.js', target: 'bun' },
   { entry: 'src/entry-server.ts', output: 'entry-server.js', target: 'bun' },
   { entry: 'src/cli/main.ts', output: 'cli.js', target: 'bun' },
-  { entry: 'src/browser.ts', output: 'browser.js', target: 'browser' }
+  { entry: 'src/browser.ts', output: 'browser.js', target: 'browser' },
+  { entry: 'src/launcher/main.ts', output: 'launcher.js', target: 'node' }
 ];
 
 await mkdir(distDir, { recursive: true });

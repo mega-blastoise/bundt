@@ -41,7 +41,7 @@ const INTERNAL_RULES: Readonly<Record<string, readonly string[]>> = {
 const EXTERNAL_RULES: Readonly<Record<string, readonly string[] | undefined>> = {
   core: ['zod'],
   browser: ['react', 'react-dom/client'],
-  launcher: ['node:child_process', 'node:module', 'node:os', 'node:path', 'node:process'],
+  launcher: ['node:child_process', 'node:fs', 'node:module', 'node:os'],
   'entry-server.ts': ['react', 'react-dom/server']
 };
 

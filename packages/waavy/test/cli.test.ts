@@ -1,6 +1,7 @@
 /**
- * One-shot CLI contract (P1 T12/T13 acceptance), run against both the bundled
- * CLI (`bun dist/cli.js`) and the compiled binary (`dist/bin/waavy`):
+ * One-shot CLI contract (P1 T12/T13 acceptance), run against the bundled CLI
+ * (`bun dist/cli.js`), the compiled binary (`dist/bin/waavy`), and the npm
+ * launcher running that binary (`node bin/waavy.js`, P3 T3):
  *
  * - stdout carries only HTML;
  * - stderr carries only JSON lines (`{"warning":…}` / `{"error":…}`);
@@ -15,12 +16,17 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 
 import { ERROR_CODES, type ErrorCode } from '../src/core/errors';
-import { buildFixtureRelease, CLI_BINARY, CLI_BUNDLE, FIXTURE_ROOT, type FixtureRelease } from './support/fixture';
+import { buildFixtureRelease, CLI_BINARY, CLI_BUNDLE, CLI_LAUNCHER, FIXTURE_ROOT, type FixtureRelease } from './support/fixture';
 
-/** The executables under test; the binary is included when it has been compiled. */
+/** The executables under test; the binary-based ones are included when it has been compiled. */
 const EXECUTABLES: ReadonlyArray<[label: string, command: readonly string[]]> = [
   ['bundled CLI', ['bun', CLI_BUNDLE]],
-  ...(existsSync(CLI_BINARY) ? [['compiled binary', [CLI_BINARY]] as [string, string[]]] : [])
+  ...(existsSync(CLI_BINARY)
+    ? ([
+        ['compiled binary', [CLI_BINARY]],
+        ['npm launcher', ['env', `WAAVY_BINARY_PATH=${CLI_BINARY}`, 'node', CLI_LAUNCHER]]
+      ] as Array<[string, string[]]>)
+    : [])
 ];
 
 let fixture: FixtureRelease;

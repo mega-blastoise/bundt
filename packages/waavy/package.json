@@ -26,7 +26,7 @@
     "bun"
   ],
   "bin": {
-    "waavy": "./bin/waavy.ts"
+    "waavy": "./bin/waavy.js"
   },
   "exports": {
     ".": {

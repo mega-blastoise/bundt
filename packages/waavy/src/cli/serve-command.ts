@@ -33,16 +33,19 @@ export type ServeFlags = {
 /** Resolves with the signal name once the process is asked to stop. */
 export type ShutdownSignal = () => Promise<string>;
 
-/** Waits for SIGTERM or SIGINT. */
+/**
+ * Waits for SIGTERM or SIGINT.
+ *
+ * The handlers stay installed after the first signal so that repeats are
+ * ignored instead of killing the process mid-drain: a terminal Ctrl-C
+ * reaches both the npm launcher and this binary, and the launcher forwards
+ * its copy too. The drain is bounded by `--shutdown-timeout` regardless.
+ */
 export const processShutdownSignal: ShutdownSignal = () =>
   new Promise((resolve) => {
-    const onSignal = (signal: string) => {
-      process.off('SIGTERM', onSignal);
-      process.off('SIGINT', onSignal);
-      resolve(signal);
-    };
-    process.once('SIGTERM', onSignal);
-    process.once('SIGINT', onSignal);
+    const onSignal = (signal: string) => resolve(signal);
+    process.on('SIGTERM', onSignal);
+    process.on('SIGINT', onSignal);
   });
 
 /** Runs the server until a shutdown signal; returns the exit code. */
@@ -51,6 +54,9 @@ export async function serveCommand(
   io: CommandIO,
   shutdownSignal: ShutdownSignal = processShutdownSignal
 ): Promise<number> {
+  // Listen for signals before the server announces `listening`: a
+  // supervisor may stop the process the moment it sees that event.
+  const stopRequested = shutdownSignal();
   let stop: (() => Promise<void>) | undefined;
   try {
     const listen = listenTargetFromFlags(flags);
@@ -71,7 +77,7 @@ export async function serveCommand(
     return reportFailure(io, error);
   }
 
-  await shutdownSignal();
+  await stopRequested;
   await stop();
   return EXIT_SUCCESS;
 }

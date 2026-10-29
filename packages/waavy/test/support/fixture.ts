@@ -21,13 +21,14 @@ export const PACKAGE_ROOT = resolve(import.meta.dir, '..', '..');
 /** Absolute path of the fixture project. */
 export const FIXTURE_ROOT = join(PACKAGE_ROOT, 'fixtures', 'basic');
 
-/** Built CLI bundle and compiled binary locations. */
+/** Built CLI bundle, compiled binary, and npm launcher locations. */
+export const CLI_LAUNCHER = join(PACKAGE_ROOT, 'bin', 'waavy.js');
 export const CLI_BUNDLE = join(PACKAGE_ROOT, 'dist', 'cli.js');
 export const CLI_BINARY = join(PACKAGE_ROOT, 'dist', 'bin', process.platform === 'win32' ? 'waavy.exe' : 'waavy');
 
 /** Fails fast with an actionable message when `dist/` is missing. */
 export function assertPackageBuilt(): void {
-  for (const file of ['entry-server.js', 'browser.js', 'cli.js']) {
+  for (const file of ['entry-server.js', 'browser.js', 'cli.js', 'launcher.js']) {
     if (!existsSync(join(PACKAGE_ROOT, 'dist', file))) {
       throw new Error(`dist/${file} is missing. Run \`bun run build\` in packages/waavy before integration tests.`);
     }
