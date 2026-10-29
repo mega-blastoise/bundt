@@ -7,11 +7,9 @@ Waavy isn't a framework. Your backend owns routing, data, auth, and caching;
 waavy turns **a registered page + JSON props** into **HTML plus the matching
 hydration assets**, and gets out of the way.
 
-> Status: `0.3.0-dev` (Phase 2 of the rewrite). Releases, one-shot rendering,
-> the warm `waavy serve` renderer, and the Rust client
-> ([`crates/waavy`](../../crates/waavy)) work today. Published per-platform
-> binaries come in Phase 3. Design:
-> [`.claude/specs/waavy/ARCHITECTURE.md`](../../.claude/specs/waavy/ARCHITECTURE.md).
+> `0.3.0` is a ground-up rewrite; nothing from `0.2.x` (or the standalone
+> `waavy` npm package) carries over. Design:
+> [`ARCHITECTURE.md`](https://github.com/mega-blastoise/bundt/blob/main/.claude/specs/waavy/ARCHITECTURE.md).
 
 ## How it works
 
@@ -32,6 +30,35 @@ browser ──GET /assets/…──▶ your server (static files from dist/waavy
 3. **Render** by asking waavy for a page ID with JSON props. You get a full
    HTML document whose `#waavy-root` hydrates in the browser with the same
    props.
+
+## Install
+
+```sh
+npm install @bundt/waavy react react-dom     # or: bun add / pnpm add
+```
+
+The package installs a native `waavy` executable for your platform (an
+optional dependency, `@bundt/waavy-<os>-<cpu>`) and a small `waavy`
+launcher. Neither Node nor Bun is needed on the machine that *runs* the
+renderer — only the binary and a release directory.
+
+| Platform | npm | GitHub release asset |
+|---|---|---|
+| macOS arm64 | `@bundt/waavy-darwin-arm64` | `waavy-darwin-arm64.tar.gz` |
+| macOS x64 | `@bundt/waavy-darwin-x64` | `waavy-darwin-x64.tar.gz` |
+| Linux x64 (glibc) | `@bundt/waavy-linux-x64` | `waavy-linux-x64.tar.gz` |
+| Linux arm64 (glibc) | `@bundt/waavy-linux-arm64` | `waavy-linux-arm64.tar.gz` |
+| Linux x64 / arm64 (musl, Alpine) | — | `waavy-linux-{x64,arm64}-musl.tar.gz` |
+| Windows x64 (**experimental**, TCP only) | `@bundt/waavy-win32-x64` | `waavy-win32-x64.zip` |
+
+Release assets are on the
+[GitHub releases page](https://github.com/mega-blastoise/bundt/releases) with
+a `SHA256SUMS` file. Alpine needs `apk add libstdc++ libgcc`. Set
+`WAAVY_BINARY_PATH` to make the npm launcher use a binary you downloaded.
+
+If `waavy` reports that its platform package is missing, optional
+dependencies were skipped (`--omit=optional`, `--no-optional`, or a lockfile
+from another OS): reinstall with them enabled.
 
 ## Quickstart
 
@@ -71,6 +98,25 @@ waavy render --release dist/waavy --page product --props '{"name":"Lamp","price"
 ```
 
 Serve `dist/waavy/client/` at `publicPath` (`/assets/` above) as static files.
+
+## Deployment
+
+1. **Build in CI** (needs Node or Bun, and your frontend's dependencies):
+   `npx waavy build`. The release directory is the whole artifact — it bundles
+   your pages *and* React, so nothing from `node_modules` is needed at runtime.
+2. **Ship** the release directory and the `waavy` binary for the target
+   platform (from `node_modules/@bundt/waavy-<os>-<cpu>/bin/waavy`, or a
+   GitHub release asset) next to your server.
+3. **Run** `waavy serve --release <dir> --socket <path>` beside your server
+   (systemd unit, container sidecar, or the Rust `Supervisor`), and render
+   over HTTP. Or call `waavy render` per request if ~40 ms is acceptable.
+4. **Serve** `<release>/client/` as static files at `publicPath` (or upload it
+   to a CDN and set `publicPath` to its URL). Asset names are content-hashed:
+   cache them forever.
+
+Deploy a new release by starting a renderer on it and switching traffic;
+each release has its own `buildId` (reported by `/health` and the
+`waavy-build-id` header).
 
 ## Configuration
 
@@ -125,9 +171,31 @@ curl --unix-socket /run/waavy.sock -X POST http://localhost/render \
 - Logs are JSON lines on stderr; SIGTERM drains in-flight requests and exits 0.
 - `waavy serve --dev` builds from source, serves assets, and rebuilds on change.
 
-Rust hosts use [`crates/waavy`](../../crates/waavy). The full contract —
-streaming failure semantics, headers, lifecycle — is in
-[`docs/PROTOCOL.md`](docs/PROTOCOL.md).
+The full contract — streaming failure semantics, headers, lifecycle — is in
+[`docs/PROTOCOL.md`](https://github.com/mega-blastoise/bundt/blob/main/packages/waavy/docs/PROTOCOL.md).
+Any language with an HTTP client can be a host.
+
+## Rust hosts
+
+```toml
+waavy = { version = "0.3", features = ["supervisor"] }
+```
+
+```rust
+use waavy::{RenderRequest, Supervisor};
+
+let supervisor = Supervisor::builder()
+    .binary("bin/waavy")
+    .release("dist/waavy")
+    .socket("/run/waavy.sock")
+    .spawn()
+    .await?;
+let page = supervisor.client().render(&RenderRequest::new("product").title("Lamp")).await?;
+```
+
+The crate also has a plain `Client` (for a renderer you run yourself) and
+one-shot rendering. See [`crates/waavy`](https://github.com/mega-blastoise/bundt/tree/main/crates/waavy)
+and [docs.rs/waavy](https://docs.rs/waavy).
 
 ## `waavy render` (one-shot)
 
@@ -174,6 +242,9 @@ a failure.
 
 ## JavaScript hosts (Bun)
 
+Requires Bun ≥ 1.3 (the `engines.bun` field applies to this library API
+only; the CLI and binary need no JavaScript runtime).
+
 ```ts
 import { createRenderer } from '@bundt/waavy/server';
 
@@ -186,9 +257,16 @@ const { html, recoverableErrors } = await renderer.render({ v: 1, page: 'product
 ```sh
 bun run build          # dist/ (library bundles, declarations, protocol schema)
 bun run build:binary   # dist/bin/waavy for this platform
+bun run build:binaries # every distribution target → npm/<os>-<cpu>/bin, dist/release-assets
 bun run test           # unit + integration + CLI contract tests (builds the binary)
 bunx playwright install chromium && bun run test:e2e   # real-browser hydration tests
+../../scripts/waavy-install-test.sh                     # pack + install like a user (npm, bun, bare binary)
+bun ../../scripts/waavy-sync-versions.ts --version X    # bump npm, platform packages and crate together
 ```
+
+Releases are cut by pushing the tag `@bundt/waavy@<version>`
+(`.github/workflows/release-waavy.yml`); run that workflow manually for a dry
+run.
 
 Source layout follows the layers in ARCHITECTURE.md §3: `core/` (runtime-agnostic),
 `build/`, `runtime/`, `transport/`, `cli/`, `browser/`. `src/layers.test.ts`

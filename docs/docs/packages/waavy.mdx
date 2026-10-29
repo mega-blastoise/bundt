@@ -4,76 +4,135 @@ title: Waavy
 
 # Waavy
 
-React SSR framework for non-JavaScript server environments. Render React applications server-side and ship hydrated bundles to the client.
+Render React pages from any server — Rust, Python, Go, Ruby, Java, PHP —
+without running JavaScript in that server. Your backend owns routing, data,
+auth and caching; waavy turns **a registered page + JSON props** into **HTML
+plus the matching hydration assets**.
 
 ## Install
 
 ```sh
-bun add @bundt/waavy
+npm install @bundt/waavy react react-dom
 ```
 
-Requires `react` and `react-dom` as peer dependencies. Optional peer dependency on `@tanstack/react-query` for data dehydration.
+This installs a native `waavy` executable for your platform (macOS and Linux,
+arm64 and x64; Windows x64 is experimental). Linux musl builds are on the
+[GitHub releases page](https://github.com/mega-blastoise/bundt/releases).
 
-## Overview
+## Register pages
 
-Waavy provides three capabilities:
-
-1. **Server rendering** — render React components to HTML streams using `renderToReadableStream`
-2. **Client bundling** — bundle client-side entry points with tree shaking and code splitting
-3. **CLI tooling** — build, serve, and develop SSR applications from the command line
-
-## CLI Usage
-
-```sh
-# Build the SSR application
-waavy build
-
-# Start the development server
-waavy dev
-
-# Serve the built application
-waavy serve
-```
-
-## Server Rendering
+A page is a module whose default export is a React component. Props come from
+your server as JSON; pages never load data themselves.
 
 ```ts
-import { renderToStream } from '@bundt/waavy';
+// waavy.config.ts
+import { defineConfig } from '@bundt/waavy';
 
-const stream = await renderToStream(<App />, {
-  bootstrapScripts: ['/client.js']
+export default defineConfig({
+  pages: {
+    product: './pages/product.tsx'
+  },
+  publicPath: '/assets/',
+  outDir: './dist/waavy'
 });
 ```
-
-Waavy uses React 19's streaming server renderer. The HTML stream can be piped directly to any HTTP response, making it compatible with Bun, Node, or proxied through non-JS servers like Go, Rust, or Python.
-
-## Client Hydration
-
-```ts
-import { hydrateApp } from '@bundt/waavy/browser';
-
-hydrateApp(<App />, document.getElementById('root'));
-```
-
-The browser entry point handles React hydration with automatic error recovery and optional TanStack Query rehydration.
-
-## Data Loading
-
-When `@tanstack/react-query` is available, Waavy supports server-side data prefetching with automatic dehydration:
 
 ```tsx
-const queryClient = new QueryClient();
+// pages/product.tsx
+import { useState } from 'react';
 
-await queryClient.prefetchQuery({
-  queryKey: ['users'],
-  queryFn: fetchUsers
-});
-
-const stream = await renderToStream(
-  <QueryClientProvider client={queryClient}>
-    <App />
-  </QueryClientProvider>
-);
+export default function Product({ name, price }: { name: string; price: number }) {
+  const [quantity, setQuantity] = useState(1);
+  return (
+    <button onClick={() => setQuantity(quantity + 1)}>
+      {quantity} × {name} (${price})
+    </button>
+  );
+}
 ```
 
-The dehydrated state is embedded in the HTML and rehydrated on the client automatically.
+## Build a release
+
+```sh
+npx waavy build
+```
+
+`dist/waavy/` is the deployment artifact: `manifest.json`, a self-contained
+`server/entry.js` (your pages and React), and content-hashed `client/` assets
+(JavaScript and CSS) that your server serves at `publicPath`.
+
+## Render
+
+One process per render (~40 ms):
+
+```sh
+waavy render --release dist/waavy --page product --props '{"name":"Lamp","price":40}' --title Lamp
+```
+
+A warm renderer over HTTP (~0.1 ms overhead), on a unix socket or TCP port:
+
+```sh
+waavy serve --release dist/waavy --socket /run/waavy.sock
+curl --unix-socket /run/waavy.sock -X POST http://localhost/render \
+  -H 'content-type: application/json' \
+  -d '{"v":1,"page":"product","props":{"name":"Lamp","price":40}}'
+```
+
+The response is a complete HTML document. waavy owns the document shell and
+renders the page inside `#waavy-root`; the props travel to the browser as
+escaped JSON in `<script type="application/json" id="waavy-data">` and the
+page hydrates with the same props.
+
+Buffered rendering is the default. `"stream": true` sends the response as soon
+as the page shell is ready; if rendering fails after that, the response is
+cut off so hosts can detect it.
+
+## Rust
+
+```toml
+waavy = { version = "0.3", features = ["supervisor"] }
+```
+
+```rust
+use serde_json::json;
+use waavy::{RenderRequest, Supervisor};
+
+let supervisor = Supervisor::builder()
+    .binary("bin/waavy")
+    .release("dist/waavy")
+    .socket("/run/waavy.sock")
+    .spawn()
+    .await?;
+
+let page = supervisor
+    .client()
+    .render(&RenderRequest::new("product").props(json!({ "name": "Lamp", "price": 40 })).title("Lamp"))
+    .await?;
+```
+
+`Supervisor` restarts the renderer if it crashes and stops it gracefully.
+`Client` alone connects to a renderer you run yourself; `waavy::oneshot`
+runs one process per render.
+
+## Errors
+
+Every failure has a stable code, mapped to an exit status (one-shot) and an
+HTTP status (`serve`):
+
+| Code | Exit | HTTP | Meaning |
+|---|---|---|---|
+| `INVALID_REQUEST` | 10 | 400 | Request or flags failed validation |
+| `PAGE_NOT_FOUND` | 11 | 404 | Page ID not in the release |
+| `RENDER_FAILED` | 20 | 500 | The page shell could not render |
+| `RENDER_TIMEOUT` | 21 | 504 | The shell was not ready by the deadline |
+| `RELEASE_INVALID` | 30 | 503 | Release files missing or inconsistent |
+| `VERSION_MISMATCH` | 31 | 503 | Release built for an incompatible waavy |
+| `BUILD_FAILED` | 40 | 500 | `waavy build` could not bundle |
+| `CONFIG_INVALID` | 41 | 500 | `waavy.config.*` missing or invalid |
+| `INTERNAL` | 70 | 500 | Unexpected failure (a bug) |
+
+## Reference
+
+- [Package README](https://github.com/mega-blastoise/bundt/tree/main/packages/waavy) — configuration, CLI flags, deployment
+- [Host protocol](https://github.com/mega-blastoise/bundt/blob/main/packages/waavy/docs/PROTOCOL.md) — the HTTP and one-shot contract for writing a client in any language
+- [Rust crate](https://docs.rs/waavy)

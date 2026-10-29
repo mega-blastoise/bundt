@@ -43,7 +43,7 @@ Bundt is a unified workspace of independently versioned tools that share a commo
 | Package | Description | Install |
 |---------|-------------|---------|
 | [`@bundt/hateoas`](packages/hateoas) | React HATEOAS framework — hypermedia-driven API clients and server responses for React apps | `bun add @bundt/hateoas` |
-| [`@bundt/waavy`](packages/waavy) | React SSR for non-JavaScript backends — render pages from Rust, Python, Go, … via `waavy serve` | `bun add @bundt/waavy` |
+| [`@bundt/waavy`](packages/waavy) | React SSR for non-JavaScript backends — render pages from Rust, Python, Go, … via a native `waavy` binary | `npm i @bundt/waavy` |
 | [`@bundt/signals`](packages/signals) | Signal graph abstractions — fine-grained reactivity primitives | _coming soon_ |
 
 ## Quick Start
@@ -124,13 +124,15 @@ waavy serve --release dist/waavy --socket /run/waavy.sock
 ```
 
 ```rust
-// Rust host (crates/waavy)
+// Rust host: `cargo add waavy` (crates/waavy)
 let page = waavy::Client::unix("/run/waavy.sock")
     .render(&waavy::RenderRequest::new("product").props(json!({ "name": "Lamp" })))
     .await?;
 ```
 
-See [`packages/waavy`](packages/waavy) and the [host protocol](packages/waavy/docs/PROTOCOL.md).
+`npm i @bundt/waavy` installs a native binary for macOS/Linux (arm64 and x64;
+Windows experimental); musl builds are GitHub release assets. See
+[`packages/waavy`](packages/waavy) and the [host protocol](packages/waavy/docs/PROTOCOL.md).
 
 ## Development
 

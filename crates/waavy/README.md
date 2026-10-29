@@ -1,7 +1,7 @@
 # waavy (Rust)
 
 Render React pages from a Rust server with
-[waavy](../../packages/waavy/README.md) — no JavaScript runtime in your
+[waavy](https://github.com/mega-blastoise/bundt/tree/main/packages/waavy) — no JavaScript runtime in your
 server process.
 
 waavy turns a **registered page + JSON props** into a complete HTML document
@@ -119,7 +119,7 @@ sensible status for your own response.
 
 ## Example
 
-[`examples/axum.rs`](examples/axum.rs) is a complete axum host (render route +
+[`examples/axum.rs`](https://github.com/mega-blastoise/bundt/blob/main/crates/waavy/examples/axum.rs) is a complete axum host (render route +
 asset serving):
 
 ```sh
@@ -138,4 +138,4 @@ Integration tests run against the real compiled binary and skip (with a
 message) when `WAAVY_BIN` / `WAAVY_RELEASE` are not set. The protocol types
 are checked against the JSON Schema published by `@bundt/waavy`.
 
-Protocol reference: [`packages/waavy/docs/PROTOCOL.md`](../../packages/waavy/docs/PROTOCOL.md).
+Protocol reference: [`packages/waavy/docs/PROTOCOL.md`](https://github.com/mega-blastoise/bundt/blob/main/packages/waavy/docs/PROTOCOL.md).

@@ -7,10 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Rewrite of waavy onto the r2 architecture (`.claude/specs/waavy/ARCHITECTURE.md`), Phases 1–2.
+## [0.3.0] - 2026-10-28
+
+Ground-up rewrite of waavy onto the r2 architecture (`.claude/specs/waavy/ARCHITECTURE.md`). Nothing from 0.2.x or the standalone `waavy` npm package carries over; see "Removed".
 
 ### Added
 
+- Native binaries on npm: `@bundt/waavy` installs `@bundt/waavy-{darwin-arm64,darwin-x64,linux-x64,linux-arm64,win32-x64}` as optional dependencies, and the `waavy` command is a dependency-free launcher (Node or Bun) that runs it. `WAAVY_BINARY_PATH` overrides the binary. Windows is experimental (TCP only).
+- GitHub release assets for every platform, plus Linux musl (`waavy-linux-{x64,arm64}-musl.tar.gz`), with `SHA256SUMS`.
+- Rust crate `waavy` 0.3.0 on crates.io, with a `Supervisor` (feature `supervisor`): starts `waavy serve`, waits for `/health`, restarts with backoff, forwards logs, shuts down gracefully.
 - `waavy serve`: warm HTTP renderer on a unix socket or TCP port (`POST /render`, `GET /health`), buffered or streaming responses with detectable truncation on late failures, 413 body limit, request IDs, JSON-lines logs, graceful SIGTERM shutdown, unix socket hygiene.
 - `waavy serve --dev`: builds from source, serves client assets, rebuilds on change, keeps the last good build on failure.
 - Host protocol reference: `docs/PROTOCOL.md`.
@@ -23,12 +28,16 @@ Rewrite of waavy onto the r2 architecture (`.claude/specs/waavy/ARCHITECTURE.md`
 - Data-island hydration (`<script type="application/json" id="waavy-data">`) with escaped JSON; `@bundt/waavy/browser` `hydrate` used by generated client entries.
 - `@bundt/waavy/server` `createRenderer` for in-process rendering on Bun.
 - Stable error codes (`ERROR_CODES`) shared by exit statuses and HTTP statuses.
-- Compiled single-file binary for the host platform (`bun run build:binary`).
+- Compiled single-file binary for the host platform (`bun run build:binary`); every distribution target with `bun run build:binaries`.
 
 ### Changed
 
 - Render semantics: buffered by default; recoverable Suspense errors and post-shell timeouts are warnings, shell failures are `RENDER_FAILED`/`RENDER_TIMEOUT`.
 - Package exports now point at built `dist/` files; declarations no longer contain path aliases.
+
+### Fixed
+
+- `waavy serve` installs its signal handlers before announcing `listening` and treats repeated SIGINT/SIGTERM as one shutdown (a terminal Ctrl-C reaches both the npm launcher and the binary).
 
 ### Removed
 

@@ -171,7 +171,14 @@ the exit code from the table (e.g. 30 for an invalid release).
 - Starting on a socket path where a live server answers is refused; a stale
   socket file (no listener) is replaced.
 - SIGTERM/SIGINT: stop accepting, let in-flight requests finish (up to
-  `--shutdown-timeout`), remove the socket file, exit `0`.
+  `--shutdown-timeout`), remove the socket file, exit `0`. Signal handlers
+  are installed before `listening` is logged, so a supervisor may stop the
+  process as soon as it sees that event; further signals during the drain
+  are ignored.
+- Supervisors should run the native executable directly
+  (`node_modules/@bundt/waavy-<os>-<cpu>/bin/waavy` or a release asset), not
+  the npm `waavy` launcher: the launcher forwards signals and exit codes
+  faithfully but adds a Node process.
 - One release per process. To deploy a new release, start a new process (on
   a new socket, then switch) or restart.
 
