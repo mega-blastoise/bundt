@@ -1,0 +1,90 @@
+---
+title: Suspense and Streaming
+description: Deadlines, recoverable errors, and when to stream responses.
+---
+
+# Suspense and Streaming
+
+## The shell and the boundaries
+
+React splits a page into the **shell** — everything outside `<Suspense>`
+boundaries — and the content inside them. Waavy's error semantics follow that
+split.
+
+```tsx
+import { Suspense } from 'react';
+
+export default function Dashboard({ user }: { user: { name: string } }) {
+  return (
+    <main>
+      <h1>Hello, {user.name}</h1>            {/* shell */}
+      <Suspense fallback={<p>Loading chart…</p>}>
+        <Chart />                             {/* boundary */}
+      </Suspense>
+    </main>
+  );
+}
+```
+
+| What happens | Result | HTML? |
+|---|---|---|
+| Everything renders | success | complete document |
+| A component **inside a boundary** throws | success, 1 *recoverable error* | complete document; the boundary shows its fallback and React retries it in the browser |
+| A boundary is **still pending at the deadline** | success, 1 *recoverable error* | complete document; the fallback is sent and the browser finishes that part |
+| The **shell** throws | `RENDER_FAILED` | none |
+| The shell isn't ready by the deadline | `RENDER_TIMEOUT` | none |
+
+Recoverable errors are worth logging, never worth failing a request over: the
+user gets a working page.
+
+## The deadline
+
+Each render has a deadline: `timeoutMs` in the request, otherwise
+`render.timeoutMs` from your config (default 10 000 ms, maximum 120 000).
+
+```json
+{ "v": 1, "page": "dashboard", "props": { "user": { "name": "Ada" } }, "timeoutMs": 2000 }
+```
+
+Set it to what your page can afford: a short deadline turns a slow boundary
+into a fallback instead of a slow response.
+
+## Buffered (default)
+
+Waavy waits for every boundary (or the deadline), then sends the whole
+document at once.
+
+- A `200` always carries the **complete, final** document.
+- The number of recoverable errors is reported — the
+  `Waavy-Recoverable-Errors` header over HTTP, `{"warning":…}` lines on
+  stderr for `waavy render`, `recoverable_errors` in the Rust client.
+
+Buffering is the right default: caching, compression and error handling stay
+simple, and with the warm renderer the extra wait is just your page's own
+render time.
+
+## Streaming (opt-in)
+
+With `"stream": true`, waavy sends the response headers as soon as the shell
+is ready and streams the rest as boundaries resolve. The browser can start
+parsing and fetching assets earlier.
+
+The trade-off is in failure handling:
+
+- Shell failures and shell timeouts still come back as a proper error status
+  with a JSON body — nothing has been sent yet.
+- Once the `200` is out, a later failure can only **cut the body short**:
+  waavy closes the connection without finishing the response. Your HTTP
+  client sees an error *while reading the body*.
+
+<Callout variant="warning">
+When you stream, a `200` is not success until the body has been read to the end. If you forward the stream to a browser, abort your own response when reading from waavy fails. If you collect it, discard the partial document. The Rust client turns this into `Error::Interrupted`.
+</Callout>
+
+Stream when time-to-first-byte matters more than simplicity, for example
+pages with a fast shell and slow, below-the-fold boundaries.
+
+## Streaming one-shot renders
+
+`waavy render --stream` writes HTML to stdout as it renders. If the exit
+status is non-zero, discard everything that was written.

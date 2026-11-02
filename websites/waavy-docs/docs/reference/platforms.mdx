@@ -1,0 +1,57 @@
+---
+title: Platforms
+description: Where the waavy binary runs, and how each platform is distributed.
+---
+
+# Platforms
+
+| Platform | Status | npm package | Release asset |
+|---|---|---|---|
+| macOS arm64 | supported | `@bundt/waavy-darwin-arm64` | `waavy-darwin-arm64.tar.gz` |
+| macOS x64 | supported | `@bundt/waavy-darwin-x64` | `waavy-darwin-x64.tar.gz` |
+| Linux x64, glibc | supported | `@bundt/waavy-linux-x64` | `waavy-linux-x64.tar.gz` |
+| Linux arm64, glibc | supported | `@bundt/waavy-linux-arm64` | `waavy-linux-arm64.tar.gz` |
+| Linux x64, musl | supported (release asset only) | — | `waavy-linux-x64-musl.tar.gz` |
+| Linux arm64, musl | supported (release asset only) | — | `waavy-linux-arm64-musl.tar.gz` |
+| Windows x64 | **experimental** | `@bundt/waavy-win32-x64` | `waavy-win32-x64.zip` |
+
+The macOS and Linux glibc platforms run waavy's CLI/serve contract tests and
+an install test in CI on native runners. Every binary, including musl and
+Windows, is smoke-tested on its platform before each release is published.
+
+## Linux
+
+- The x64 build targets the "baseline" x64 instruction set (no AVX2
+  required), so it runs on older servers and emulators.
+- **musl / Alpine:** npm cannot pick packages by C library, so musl binaries
+  are only on the GitHub release. They need the C++ runtime:
+
+  ```bash
+  apk add --no-cache libstdc++ libgcc
+  ```
+
+## Windows (experimental)
+
+- TCP only: `waavy serve --port`. Unix sockets are unavailable.
+- CI only checks `--version` and a TCP smoke render; failures there don't
+  block releases.
+- The Rust `Supervisor` is unix-only; use `Client::tcp` with a renderer you
+  run yourself.
+
+## Binary size
+
+Each binary embeds the Bun runtime: about 60 MB on macOS and 90–100 MB on
+Linux and Windows (24–40 MB compressed). The npm install downloads only the
+one for your platform.
+
+## Verifying downloads
+
+Each release has a `SHA256SUMS` file:
+
+```bash
+grep ' waavy-linux-arm64.tar.gz$' SHA256SUMS | sha256sum -c -    # Linux
+grep ' waavy-darwin-arm64.tar.gz$' SHA256SUMS | shasum -a 256 -c - # macOS
+```
+
+npm packages are published with [provenance](https://docs.npmjs.com/generating-provenance-statements)
+from the release workflow.

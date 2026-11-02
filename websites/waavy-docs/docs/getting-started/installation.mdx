@@ -1,0 +1,77 @@
+---
+title: Installation
+description: Install @bundt/waavy and get the native waavy binary for your platform.
+---
+
+# Installation
+
+Waavy has two halves:
+
+- **Build time** — in your frontend project, `@bundt/waavy` builds releases
+  from your React pages. This needs a package manager (npm, pnpm, Bun).
+- **Run time** — next to your server, the `waavy` binary renders pages from a
+  release. This needs **no Node and no Bun**: just the binary.
+
+## Install the package
+
+```bash
+npm install @bundt/waavy react react-dom
+# or
+bun add @bundt/waavy react react-dom
+# or
+pnpm add @bundt/waavy react react-dom
+```
+
+React 19 is required (`react` and `react-dom` are peer dependencies; your
+release bundles the versions your lockfile pins).
+
+The install also pulls in exactly one platform package with the native binary,
+for example `@bundt/waavy-linux-x64`. The `waavy` command you run through
+`npx`/`bunx` is a small launcher that finds and runs that binary.
+
+```bash
+npx waavy --version
+# waavy/0.3.0 darwin-arm64 …
+```
+
+## Supported platforms
+
+| Platform | npm package | GitHub release asset |
+|---|---|---|
+| macOS arm64 | `@bundt/waavy-darwin-arm64` | `waavy-darwin-arm64.tar.gz` |
+| macOS x64 | `@bundt/waavy-darwin-x64` | `waavy-darwin-x64.tar.gz` |
+| Linux x64 (glibc) | `@bundt/waavy-linux-x64` | `waavy-linux-x64.tar.gz` |
+| Linux arm64 (glibc) | `@bundt/waavy-linux-arm64` | `waavy-linux-arm64.tar.gz` |
+| Linux x64 / arm64 (musl, Alpine) | — | `waavy-linux-x64-musl.tar.gz`, `waavy-linux-arm64-musl.tar.gz` |
+| Windows x64 (experimental) | `@bundt/waavy-win32-x64` | `waavy-win32-x64.zip` |
+
+See [Platforms](/reference/platforms) for details, including Alpine
+requirements and the limits of the Windows build.
+
+## Download a binary directly
+
+Servers usually don't have your frontend's `node_modules`. Copy the binary
+from `node_modules/@bundt/waavy-<os>-<cpu>/bin/waavy` in CI, or download it
+from the [GitHub releases](https://github.com/mega-blastoise/bundt/releases):
+
+```bash
+VERSION=0.3.0
+curl -fsSLO "https://github.com/mega-blastoise/bundt/releases/download/%40bundt%2Fwaavy%40$VERSION/waavy-linux-x64.tar.gz"
+curl -fsSLO "https://github.com/mega-blastoise/bundt/releases/download/%40bundt%2Fwaavy%40$VERSION/SHA256SUMS"
+grep ' waavy-linux-x64.tar.gz$' SHA256SUMS | sha256sum -c -
+tar -xzf waavy-linux-x64.tar.gz    # → ./waavy, ./LICENSE
+```
+
+## Rust hosts
+
+```bash
+cargo add waavy                          # Client + one-shot
+cargo add waavy --features supervisor    # + Supervisor (unix)
+```
+
+The crate's minor version tracks `@bundt/waavy`: use `waavy = "0.3"` with
+`@bundt/waavy@0.3.x`. The minimum supported Rust version is 1.85.
+
+<Callout variant="warning">
+If `waavy` says its platform package is not installed, optional dependencies were skipped — by `--omit=optional`, `--no-optional`, or a lockfile created on another operating system. Reinstall with optional dependencies enabled, or point `WAAVY_BINARY_PATH` at a binary you downloaded.
+</Callout>

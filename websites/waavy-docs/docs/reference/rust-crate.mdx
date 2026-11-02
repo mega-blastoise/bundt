@@ -1,0 +1,81 @@
+---
+title: Rust Crate
+description: API summary of the waavy crate. Full docs on docs.rs.
+---
+
+# Rust Crate
+
+```text
+waavy = "0.3"                                          # Client + oneshot
+waavy = { version = "0.3", features = ["supervisor"] } # + Supervisor
+```
+
+| Feature | Default | Adds |
+|---|---|---|
+| `oneshot` | yes | `oneshot::render` |
+| `supervisor` | no | `Supervisor`, `SupervisorBuilder`, `Event`, `Status` (unix only) |
+
+MSRV 1.85. Full API documentation: [docs.rs/waavy](https://docs.rs/waavy).
+
+## RenderRequest
+
+```rust
+use std::time::Duration;
+use serde_json::json;
+use waavy::RenderRequest;
+
+let request = RenderRequest::new("product")
+    .props(json!({ "name": "Lamp", "price": 40 }))
+    .title("Lamp")
+    .lang("en-GB")
+    .head(r#"<meta name="robots" content="noindex">"#) // trusted HTML only
+    .timeout(Duration::from_secs(2));
+```
+
+## Client
+
+| Method | Returns |
+|---|---|
+| `Client::unix(path)` / `Client::tcp("127.0.0.1:4100")` | a client (cheap to clone) |
+| `.with_timeout(duration)` | bounds each call on the client side |
+| `.render(&request).await` | `Rendered { html, build_id, recoverable_errors }` |
+| `.render_stream(&request).await` | `RenderStream` — a `Stream` of `Result<Bytes>`; `.build_id()`, `.into_string()` |
+| `.health().await` | `Health { ok, build_id, protocol_version, waavy_version }` |
+
+The client opens a fresh connection per call (cheap over a local socket) and
+never starts a renderer itself.
+
+## Supervisor
+
+| Builder method | Default |
+|---|---|
+| `.binary(path)`, `.release(dir)`, `.socket(path)` | required |
+| `.arg(value)` | extra `waavy serve` arguments |
+| `.startup_timeout(d)` | 10 s |
+| `.shutdown_grace(d)` | 15 s between SIGTERM and SIGKILL |
+| `.restart_backoff(initial, max)` | 100 ms, 5 s (reset after 30 s of uptime) |
+| `.max_restarts_per_minute(n)` | 10 |
+| `.on_event(fn)` | JSON lines on stderr |
+| `.spawn().await` | starts and waits for `/health` |
+
+| Supervisor method | |
+|---|---|
+| `.client()` | a `Client` for the socket |
+| `.status()` | `Running`, `Restarting`, `Failed`, `Stopped` |
+| `.pid()`, `.restarts()`, `.socket()` | introspection |
+| `.shutdown().await` | graceful stop; removes the socket |
+
+`Event` values: `Log(line)`, `Ready { pid }`, `Exited { status }`,
+`Restarting { delay, restarts }`, `RestartFailed { error }`,
+`GaveUp { restarts }`.
+
+## Errors
+
+`waavy::Error` variants: `Render { code, message, page }`,
+`Interrupted(_)`, `Timeout(_)`, `Connect(_)`, `Http(_)`, `Spawn(_)`,
+`Protocol(_)`. `error.is_retryable()` is true only for `Connect`;
+`error.code()` returns the `ErrorCode` for `Render`.
+
+`ErrorCode` has a variant per [error code](/reference/errors), plus
+`Unknown(String)` for codes added by newer waavy versions, with
+`http_status()`, `exit_status()` and `as_str()`.

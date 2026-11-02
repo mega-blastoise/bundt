@@ -1,0 +1,62 @@
+---
+title: Upgrading Dependencies
+description: Bun, React, Zod, the Rust toolchain and crates, and CI runners.
+---
+
+# Upgrading Dependencies
+
+## Bun
+
+Bun is both the build tool and the runtime embedded in every binary, so a Bun
+upgrade changes what users run.
+
+- Re-run the full suite **and** the e2e tests.
+- Re-check the behaviours waavy works around (see
+  [Transports](/architecture/transports#bun-node-http-behaviours-to-respect)):
+  `node:http` destroy semantics, disconnect reporting, module caching by path.
+  If Bun fixes one, simplify the workaround *and* keep a test proving the
+  behaviour.
+- Re-check `--compile` flags still exist and still matter
+  (`--compile-autoload-package-json` is load-bearing).
+- Re-measure binary sizes and serve latency if the upgrade is large.
+- The P2 spike result that `Bun.serve` can't truncate one response is
+  version-specific: re-run that spike before ever moving off `node:http`.
+
+CI pins `bun-version: "1.3"` (latest 1.3.x).
+
+## React
+
+- Releases bundle the **user's** React (D8); waavy's own `react` dev
+  dependency only affects tests. The peer range is `^19`.
+- The render model depends on `renderToReadableStream`, `allReady`, abort
+  semantics, `onError` and `hydrateRoot`. A React major means re-validating
+  the taxonomy in [Rendering](/architecture/rendering) with the
+  `boundary`/`slow`/`broken` fixture pages and Playwright.
+
+## Zod
+
+Zod generates the JSON Schema (`protocolJsonSchema()`). After an upgrade,
+diff `dist/protocol.schema.json` before and after: the Rust schema test will
+catch type breakage, but not cosmetic schema drift that other hosts' code
+generators may care about.
+
+## Rust
+
+- Check MSRV after any `cargo update`: `cargo +1.85 check -p waavy --all-features`.
+  Raising MSRV is a minor-version change — note it in the CHANGELOG and README.
+- `Cargo.lock` isn't committed (library crate); CI resolves fresh, so new
+  dependency releases can break CI without a code change.
+- Keep tokio features minimal in `[dependencies]`.
+- A stale local crates.io index once caused confusing resolution errors —
+  `cargo generate-lockfile` refreshes it.
+
+## CI runners
+
+GitHub retires images (`macos-13` was retired before 0.3.0). When a runner
+label disappears, update `ci.yml`'s `waavy-matrix`, `release-waavy.yml`'s smoke
+matrix, and these docs together.
+
+## Playwright
+
+`bunx playwright install --with-deps chromium` in CI must match the
+installed `playwright` package version; bump both together.

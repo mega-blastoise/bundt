@@ -1,0 +1,43 @@
+---
+title: Decision Log
+description: Architectural decisions D1–D15 and the reasoning behind them.
+---
+
+# Decision Log
+
+The canonical log is `.claude/specs/waavy/README.md`; the reasoning is in
+`ARCHITECTURE.md` §13 and the phase specs. Revisit a decision explicitly —
+write down what changed — rather than drifting away from it.
+
+| # | Decision | Why |
+|---|---|---|
+| D1 | The warm transport is **HTTP** over a unix socket or TCP | every language has an HTTP client; unix sockets give local-only access and ~0.1 ms overhead |
+| D2 | Engine and CLI are **Bun-only** (compiled binary); `core` stays runtime-agnostic | one runtime to test; hosts need no JS runtime at all |
+| D3 | ~~Cache encryption~~ | moot: the render cache was removed (measurements showed it isn't needed) |
+| D4 | The Rust client lives in **`crates/waavy`** | protocol and client evolve in one repository, tested together |
+| D5 | **Archive** the standalone repos after 0.3.0, with README pointers; don't delete | history stays reachable |
+| D6 | **Drop** the TanStack Query extension | data loading is the host's job |
+| D7 | First published version **0.3.0** | a clear break from the 0.1.x/0.2.x line |
+| D8 | **React is bundled into** `server/entry.js` | one React instance per release, pinned by the project's lockfile; no runtime `node_modules` |
+| D9 | **Fragment mode deferred** (return container + island + scripts for host templates) | likely the first addition — Rails/Django/Phoenix hosts want it — but needs its own contract |
+| D10 | Rewrite **in place** on branch `waavy/r2` | keep history and package name |
+| D11 | **Windows x64 experimental**, TCP only | cheap to build; not worth blocking releases on |
+| D12 | **React 19 only** | `renderToReadableStream` + `allReady` semantics the render model relies on |
+| D13 | Page **CSS imports** supported from P1 | unstyled SSR is not a credible first release |
+| D14 | Publish the crate as **`waavy`** on crates.io | name was free; Rust is the first-class non-JS host |
+| D15 | **musl binaries as GitHub release assets only** | npm can't select packages by libc (marked "proposed" in the log; implemented in 0.3.0) |
+
+## Decisions made during implementation
+
+These came out of spikes and bugs rather than up-front design:
+
+- **`node:http`, not `Bun.serve`**, for `waavy serve` — only it can truncate
+  one response (P2 spike S1).
+- **Buffered rendering is the default**; streaming is opt-in with
+  truncation-as-failure semantics.
+- **No HTTP trailers** in the contract.
+- **The launcher is TypeScript** in its own layer, bundled for Node, instead
+  of hand-written JS.
+- **Version overrides only for dry runs** in the release workflow; real
+  releases come from a tag that matches `package.json`.
+- **MSRV 1.85** instead of the planned 1.80, forced by dependencies.

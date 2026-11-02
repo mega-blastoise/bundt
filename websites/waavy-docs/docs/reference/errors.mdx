@@ -1,0 +1,49 @@
+---
+title: Error Codes
+description: Stable error codes with their exit statuses and HTTP statuses.
+---
+
+# Error Codes
+
+Every failure carries one stable code. The same code maps to an exit status
+(`waavy render`) and an HTTP status (`waavy serve`).
+
+| Code | Exit | HTTP | Meaning | What to do |
+|---|---|---|---|---|
+| `INVALID_REQUEST` | 10 | 400 | The request or flags failed validation (also `413` for oversized bodies, `404` for unknown routes) | Fix the caller; the message names the field |
+| `PAGE_NOT_FOUND` | 11 | 404 | The page ID isn't in the release | Register the page and rebuild, or fix the ID |
+| `RENDER_FAILED` | 20 | 500 | The page shell threw while rendering | A bug in the page, or props it doesn't handle |
+| `RENDER_TIMEOUT` | 21 | 504 | The shell wasn't ready by the deadline | Make the shell cheaper, move slow parts behind `<Suspense>`, or raise `timeoutMs` |
+| `RELEASE_INVALID` | 30 | 503 | Release files missing or inconsistent | Rebuild and redeploy the release directory completely |
+| `VERSION_MISMATCH` | 31 | 503 | The release was built for an incompatible waavy | Rebuild with the same `@bundt/waavy` version as the binary |
+| `BUILD_FAILED` | 40 | 500 | `waavy build` couldn't bundle | Read the bundler error in the message |
+| `CONFIG_INVALID` | 41 | 500 | `waavy.config.*` missing or invalid | Fix the config; the message lists the issues |
+| `INTERNAL` | 70 | 500 | Unexpected failure — a waavy bug | Please [report it](https://github.com/mega-blastoise/bundt/issues) |
+
+Other exit statuses:
+
+| Exit | From | Meaning |
+|---|---|---|
+| 2 | binary | No command given (help printed) |
+| 126 | npm launcher | The binary exists but couldn't be started |
+| 127 | npm launcher | No binary found — see [Troubleshooting](/troubleshooting) |
+| 128 + n | npm launcher | The binary was killed by signal n |
+
+## In code
+
+```ts
+import { ERROR_CODES } from '@bundt/waavy';
+
+ERROR_CODES.PAGE_NOT_FOUND; // { exit: 11, http: 404 }
+```
+
+```rust
+use waavy::ErrorCode;
+
+ErrorCode::PageNotFound.http_status(); // Some(404)
+ErrorCode::PageNotFound.exit_status(); // Some(11)
+```
+
+New codes may be added in minor versions. Treat an unknown code as a failure
+and fall back to the HTTP status or exit status for classification; the Rust
+crate represents it as `ErrorCode::Unknown`.

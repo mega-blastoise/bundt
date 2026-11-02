@@ -81,6 +81,13 @@ jobs:
             echo "::error::Real releases run from a pushed tag, not workflow_dispatch"
             exit 1
           fi
+          # Fail fast on a malformed version (e.g. a stray trailing "."), which
+          # would otherwise pass build and smoke and only fail at publish.
+          SEMVER='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
+          if ! [[ "$VERSION" =~ $SEMVER ]]; then
+            echo "::error::\"$VERSION\" is not a valid version (expected e.g. 0.3.0 or 0.3.0-rc.0)"
+            exit 1
+          fi
           # Prereleases (anything with a "-") go to the `next` dist-tag.
           case "$VERSION" in *-*) NPM_TAG=next ;; *) NPM_TAG=latest ;; esac
           {
