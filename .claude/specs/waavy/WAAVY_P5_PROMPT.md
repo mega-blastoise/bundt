@@ -13,9 +13,9 @@ Read, in order:
 2. `.claude/specs/waavy/ARCHITECTURE.md` (§5 serve/transport, layer rules).
 3. `websites/waavy-maintainers/docs/architecture/transports.mdx` and
    `known-issues.mdx` (Bun `node:http` behaviours you must respect).
-4. `.claude/specs/waavy/WAAVY_P5_STATUS.md` (this phase's contract). Check its
-   Decisions table: if D17 is still **open**, ask the owner before T7, and
-   use option A if they defer.
+4. `.claude/specs/waavy/WAAVY_P5_STATUS.md` (this phase's contract). D17 is
+   decided: the dashboard page is plain HTML plus one ES module, with no
+   framework.
 
 Working rules:
 - Branch `waavy/p5-status` from `main`. Commit per task

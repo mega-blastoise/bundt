@@ -34,5 +34,5 @@ Start a phase by pasting its `_PROMPT.md` into a fresh session at the repo root.
 | D14 | Publish crate `waavy` to crates.io in P3 | accepted 2026-10-28 |
 | D15 | musl binaries as GitHub release assets only | proposed (P3 spec) |
 | D16 | Dashboard is a separate `waavy dashboard` process, not a `serve` admin port | proposed (P5 spec) |
-| D17 | Dashboard UI technology: plain HTML + ESM (A) vs dogfooded waavy release (B) | **open** (P5 spec) |
+| D17 | Dashboard UI: plain HTML + ES module, no framework | accepted 2026-11-02 |
 | D18 | `/status` excluded from the access log and render stats | proposed (P5 spec) |

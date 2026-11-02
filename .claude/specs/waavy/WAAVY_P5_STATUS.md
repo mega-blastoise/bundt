@@ -193,8 +193,8 @@ thin viewer over it.
   history cap, restart detection, and rates across a restart.
 
 ### T7 — Dashboard page
-- [ ] **UI technology: D17, owner decision (see below).** The default if no
-      decision is made is option A.
+- [ ] **UI technology: plain HTML + one ES module, no framework (D17 = A).**
+      No build step. Sparklines are inline SVG.
 - [ ] Panels:
       1. Header: state pill (healthy / unresponsive Ns / unreachable), pid,
          uptime, waavy version, address.
@@ -260,10 +260,10 @@ thin viewer over it.
 | # | Decision | Status |
 |---|---|---|
 | D16 | Dashboard is a separate `waavy dashboard` process, not a `serve` admin port | proposed |
-| D17 | Dashboard UI technology (below) | **open** |
+| D17 | Dashboard UI: option A, plain HTML + ES module | accepted 2026-11-02 |
 | D18 | `/status` excluded from the access log and render stats | proposed |
 
-**D17 options**
+**D17 options** (decided: A)
 
 - **A — plain HTML + one ES module, no framework (recommended).** Embedded
   as text in the binary, a few kB, no build step, nothing that depends on
