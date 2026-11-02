@@ -23,7 +23,7 @@ bun scripts/waavy-sync-versions.ts --check
   <Step title="Verify locally">
 
 ```bash
-(cd packages/waavy && bunx tsc --noEmit && bun run test && bun run test:e2e)
+(cd packages/waavy && bunx tsc --noEmit && bun run build && bun run test && bun run test:e2e)
 eval "$(scripts/waavy-rs-prepare.sh)" && cargo test -p waavy --all-features
 cargo publish -p waavy --dry-run --allow-dirty
 scripts/waavy-install-test.sh
