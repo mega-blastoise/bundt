@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `waavy serve --socket` rejects paths longer than the OS limit for unix sockets (103 bytes on macOS and the BSDs, 107 on Linux) with `INVALID_REQUEST`, exit 10. Previously it logged `listening` on a socket no non-Bun client could connect to.
+- Rust `Supervisor`: before each start, fails with `Error::Spawn` (`AddrInUse`) if another process already answers on the socket, instead of reporting `Ready` against it while its own renderer crash-looped. Also fails with `Error::Spawn` (`InvalidInput`) on an over-long socket path, instead of `Timeout`.
+
+### Added
+
+- `GET /health` includes `pid`, the renderer's process ID. The Rust `Health` struct has a matching `pid: Option<u32>` field.
+
 ## [0.3.0] - 2026-10-28
 
 Ground-up rewrite of waavy onto the r2 architecture (`.claude/specs/waavy/ARCHITECTURE.md`). Nothing from 0.2.x or the standalone `waavy` npm package carries over; see "Removed".

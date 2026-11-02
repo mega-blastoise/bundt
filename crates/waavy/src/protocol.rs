@@ -260,6 +260,9 @@ pub struct Health {
     pub protocol_version: u32,
     /// waavy version of the server.
     pub waavy_version: String,
+    /// Process ID of the server (waavy 0.3.1 and later).
+    #[serde(default)]
+    pub pid: Option<u32>,
 }
 
 #[cfg(test)]

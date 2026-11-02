@@ -46,6 +46,9 @@ supervisor.shutdown().await?;     // SIGTERM, drain, SIGKILL after 15 s
   retryable error.
 - If the renderer refuses to start — a broken release, for example — `spawn`
   returns waavy's own error (`ErrorCode::ReleaseInvalid`, …).
+- Before each start, the supervisor checks the socket. If another process
+  already answers there, or the path is too long for the OS, it fails with
+  `Error::Spawn` instead of starting a renderer.
 - The renderer's JSON log lines and the supervisor's events go to
   `on_event`; by default both are written to your stderr as JSON lines.
 - Dropping the `Supervisor` kills the renderer.

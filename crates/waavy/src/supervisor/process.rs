@@ -2,7 +2,8 @@
 //! waiting until it answers `/health`, and stopping it.
 
 use std::ffi::OsString;
-use std::path::PathBuf;
+use std::os::unix::ffi::OsStrExt;
+use std::path::{Path, PathBuf};
 use std::process::{ExitStatus, Stdio};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -22,6 +23,29 @@ const HEALTH_POLL: Duration = Duration::from_millis(25);
 const HEALTH_PROBE_TIMEOUT: Duration = Duration::from_secs(1);
 /// How long to wait for the stderr pump after the child exits.
 const STDERR_DRAIN_TIMEOUT: Duration = Duration::from_secs(1);
+/// Timeout for the "is someone already serving this socket?" probe.
+const OCCUPIED_PROBE_TIMEOUT: Duration = Duration::from_millis(500);
+
+/// Longest connectable socket path in bytes: `sizeof(sun_path)` minus the
+/// terminating NUL (104 on macOS and the BSDs, 108 on Linux).
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "freebsd",
+    target_os = "openbsd",
+    target_os = "netbsd",
+    target_os = "dragonfly"
+))]
+pub(crate) const MAX_SOCKET_PATH_BYTES: usize = 103;
+#[cfg(not(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "freebsd",
+    target_os = "openbsd",
+    target_os = "netbsd",
+    target_os = "dragonfly"
+)))]
+pub(crate) const MAX_SOCKET_PATH_BYTES: usize = 107;
 
 /// How to start the renderer; fixed for the supervisor's lifetime.
 #[derive(Debug, Clone)]
@@ -63,7 +87,14 @@ impl Renderer {
 /// On failure the process is gone: either it exited by itself (the error is
 /// waavy's own report, e.g. `RELEASE_INVALID`, when it printed one) or it was
 /// killed after [`Launch::startup_timeout`] ([`Error::Timeout`]).
+///
+/// Before spawning, fails with [`Error::Spawn`] if the socket path is too
+/// long to connect to, or if another process already answers on it: its
+/// `/health` would otherwise be mistaken for the new renderer's, while the
+/// new renderer refuses the socket and exits.
 pub(crate) async fn start(launch: &Launch, hook: &EventHook) -> Result<Renderer> {
+    check_socket_path(&launch.socket)?;
+    ensure_socket_free(&launch.socket).await?;
     let mut renderer = spawn(launch, hook)?;
     match wait_ready(&mut renderer, launch).await {
         Ok(()) => {
@@ -77,6 +108,40 @@ pub(crate) async fn start(launch: &Launch, hook: &EventHook) -> Result<Renderer>
             Err(error)
         }
     }
+}
+
+/// Rejects socket paths the OS cannot connect to.
+pub(crate) fn check_socket_path(socket: &Path) -> Result<()> {
+    let bytes = socket.as_os_str().as_bytes().len();
+    if bytes > MAX_SOCKET_PATH_BYTES {
+        return Err(Error::Spawn(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            format!(
+                "socket path is {bytes} bytes; this OS allows at most {MAX_SOCKET_PATH_BYTES}. \
+                 Use a shorter path, such as one under /tmp: {}",
+                socket.display()
+            ),
+        )));
+    }
+    Ok(())
+}
+
+/// Fails if a server already answers `/health` on the socket.
+async fn ensure_socket_free(socket: &Path) -> Result<()> {
+    let probe = Client::unix(socket).with_timeout(OCCUPIED_PROBE_TIMEOUT);
+    let Ok(health) = probe.health().await else { return Ok(()) };
+    let holder = match health.pid {
+        Some(pid) => format!("waavy {} (pid {pid})", health.waavy_version),
+        None => format!("waavy {}", health.waavy_version),
+    };
+    Err(Error::Spawn(std::io::Error::new(
+        std::io::ErrorKind::AddrInUse,
+        format!(
+            "{} is already served by {holder}, build {}; stop that process or use another socket",
+            socket.display(),
+            health.build_id
+        ),
+    )))
 }
 
 fn spawn(launch: &Launch, hook: &EventHook) -> Result<Renderer> {
@@ -154,5 +219,21 @@ pub(crate) async fn terminate(renderer: &mut Renderer, grace: Duration) -> std::
             renderer.child.kill().await?;
             renderer.child.wait().await
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn socket_path_limit_is_inclusive() {
+        let at_limit = PathBuf::from(format!("/{}", "a".repeat(MAX_SOCKET_PATH_BYTES - 1)));
+        assert!(check_socket_path(&at_limit).is_ok());
+
+        let too_long = PathBuf::from(format!("/{}", "a".repeat(MAX_SOCKET_PATH_BYTES)));
+        let error = check_socket_path(&too_long).unwrap_err();
+        assert!(matches!(&error, Error::Spawn(io) if io.kind() == std::io::ErrorKind::InvalidInput));
+        assert!(error.to_string().contains("allows at most"), "{error}");
     }
 }

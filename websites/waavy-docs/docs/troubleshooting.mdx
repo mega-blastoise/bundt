@@ -85,6 +85,17 @@ the browser than on the server. Look for `Date.now()`, `Math.random()`,
 already listening on that path. A stale socket file from a crashed process is
 replaced automatically.
 
+**`waavy serve` says "Socket path is N bytes"** — unix socket paths are
+limited to 103 bytes on macOS (107 on Linux), and macOS's `$TMPDIR` alone
+uses about 50. Pick a shorter path, such as one under `/tmp`. Before 0.3.1,
+waavy logged `listening` on such paths but nothing could connect, and the
+Rust `Supervisor` failed with `Timeout`.
+
+**The `Supervisor` fails with "already served by waavy … (pid N)"** — an
+older renderer, often from a previous run of your server, still holds the
+socket. Stop that process. Before 0.3.1 the supervisor reported `Ready`
+against it and pages rendered from the old release.
+
 **Streamed responses end early** — that's how waavy reports a failure after
 the shell was sent. Treat a body read error as a failed render; see
 [Suspense and Streaming](/guides/suspense-and-streaming).

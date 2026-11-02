@@ -29,7 +29,7 @@ afterAll(async () => {
 
 /** Both listen modes, each with its own server process. */
 const MODES = [
-  ['unix socket', () => ['--socket', join(scratch, `${crypto.randomUUID()}.sock`)]],
+  ['unix socket', () => ['--socket', join(scratch, `${crypto.randomUUID().slice(0, 8)}.sock`)]],
   ['tcp port', () => ['--port', '0']]
 ] as const;
 
@@ -50,7 +50,8 @@ describe.each(MODES)('serve over %s', (_label, listenArgs) => {
       ok: true,
       buildId: fixture.manifest.buildId,
       protocolVersion: 1,
-      waavyVersion: expect.any(String)
+      waavyVersion: expect.any(String),
+      pid: server.process.pid
     });
   });
 
@@ -180,6 +181,18 @@ describe('serve lifecycle', () => {
     expect(second).rejects.toThrow('already listening');
     await second.catch(() => undefined);
     expect(await first.stop()).toBe(0);
+  });
+
+  test('a socket path over the OS limit is rejected before listening', async () => {
+    const socket = join(scratch, `${'s'.repeat(120)}.sock`);
+    const child = Bun.spawn([CLI_BINARY, 'serve', '--release', fixture.dir, '--socket', socket], { stderr: 'pipe' });
+    const [exitCode, stderr] = await Promise.all([child.exited, new Response(child.stderr).text()]);
+    expect(exitCode).toBe(10);
+    expect(stderr).not.toContain('"listening"');
+    const error = JSON.parse(stderr.trim().split('\n').at(-1) ?? '');
+    expect(error).toMatchObject({ error: { code: 'INVALID_REQUEST' } });
+    expect(error.error.message).toContain('allows at most');
+    expect(existsSync(socket)).toBe(false);
   });
 
   test('an invalid release fails before listening with a JSON error', async () => {

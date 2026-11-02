@@ -142,7 +142,9 @@ required).
   - No `Waavy-Recoverable-Errors` header (the count is unknown when headers
     are sent). HTTP trailers are not used.
 
-**`GET /health`** — `200 {"ok":true,"buildId":"…","protocolVersion":1,"waavyVersion":"…"}`.
+**`GET /health`** — `200 {"ok":true,"buildId":"…","protocolVersion":1,"waavyVersion":"…","pid":1234}`.
+`pid` (since 0.3.1) is the renderer's process ID, for diagnosing which
+process holds a socket.
 
 Any other route: `404` `INVALID_REQUEST`.
 

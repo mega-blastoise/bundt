@@ -105,8 +105,11 @@ may be added in minor versions.
 ### GET /health
 
 ```json
-{ "ok": true, "buildId": "…", "protocolVersion": 1, "waavyVersion": "0.3.0" }
+{ "ok": true, "buildId": "…", "protocolVersion": 1, "waavyVersion": "0.3.1", "pid": 4242 }
 ```
+
+`pid` (since 0.3.1) is the renderer's process ID, useful for finding the
+process that holds a socket. Treat it as optional.
 
 Any other route returns `404` with `INVALID_REQUEST`. Bodies over
 `--max-body` get `413`.
@@ -135,6 +138,8 @@ Events: `listening`, `shutting_down`, `stopped`, `dev_build`,
   connections.
 - Starting on a socket path where a live server answers is refused; a stale
   socket file is replaced.
+- A socket path longer than the OS allows (103 bytes on macOS and the BSDs,
+  107 on Linux) is refused with `INVALID_REQUEST` (since 0.3.1).
 - SIGTERM/SIGINT: stop accepting, finish in-flight requests (up to
   `--shutdown-timeout`), remove the socket, exit 0. Repeated signals during
   the drain are ignored.

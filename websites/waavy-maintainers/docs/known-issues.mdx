@@ -28,6 +28,21 @@ description: Limitations, technical debt and sharp edges, as of 0.3.0.
   dependencies — intentional in the monorepo (development uses
   `dist/bin/waavy`), and frozen installs pass.
 
+## Fixed in 0.3.1 (found dogfooding in kanban-board)
+
+- **Over-long unix socket paths**: Bun binds them, but no non-Bun client can
+  connect, so `serve` logged `listening` while the Rust `Supervisor` timed
+  out. `serve` and the `Supervisor` now reject them up front
+  (`transport/unix-socket.ts`, `supervisor/process.rs`).
+- **Supervisor `Ready` against a stale renderer**: the readiness poll
+  accepted any `/health` answer on the socket, including one from an old
+  process, while the new child exited 10 and crash-looped. The supervisor now
+  probes the socket before spawning and fails with `AddrInUse` and the
+  holder's `pid` (new `/health` field). A small race remains: a server that
+  appears between the probe and the child's own claim is still mistaken for
+  the child. PID matching can't close that gap, because the npm launcher
+  runs the binary as its own child.
+
 ## Code and tests
 
 - **Order-dependent test interaction**: running `src` tests before
