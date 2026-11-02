@@ -1,0 +1,59 @@
+---
+title: Configuration
+description: The waavy.config.ts reference.
+---
+
+# Configuration
+
+`waavy build` and `waavy serve --dev` read the first of `waavy.config.ts`,
+`waavy.config.mts`, `waavy.config.js` and `waavy.config.mjs` found in the
+project root. Its default export is the config; wrap it in
+`defineConfig` for types.
+
+```ts
+// waavy.config.ts
+import { defineConfig } from '@bundt/waavy';
+
+export default defineConfig({
+  pages: {
+    home: './pages/home.tsx',
+    product: './pages/product.tsx',
+    'checkout/payment': './pages/checkout/payment.tsx'
+  },
+  publicPath: '/assets/',
+  outDir: './dist/waavy',
+  render: {
+    timeoutMs: 10_000
+  }
+});
+```
+
+## Options
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `pages` | `Record<string, string>` | — (required) | Page ID → module path, relative to the config file. At least one page. |
+| `publicPath` | `string` | `'/assets/'` | URL prefix where your host serves `<release>/client/`. An absolute path or an `http(s)://` URL, ending in `/`. |
+| `outDir` | `string` | `'./dist/waavy'` | Release directory, relative to the config file. `waavy build --out` overrides it. |
+| `render.timeoutMs` | `number` | `10000` | Default render deadline, 1–120000 ms. Recorded in the release; a request's `timeoutMs` overrides it. |
+
+Unknown keys are errors (`CONFIG_INVALID`), so typos don't pass silently.
+
+## Page IDs
+
+Lowercase segments of `[a-z0-9_-]`, separated by `/`: `home`, `checkout/payment`.
+
+## publicPath and CDNs
+
+`publicPath` is baked into the HTML waavy renders: every script, stylesheet
+and preload URL starts with it. Change it and rebuild to move assets to a CDN:
+
+```ts
+publicPath: 'https://cdn.example.com/shop/'
+```
+
+## The config runs at build time only
+
+The config file is executed by `waavy build` (and dev mode). It can import
+packages and compute values, but nothing in it reaches the browser or the
+renderer except the values above.

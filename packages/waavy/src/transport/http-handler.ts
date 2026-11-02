@@ -124,7 +124,8 @@ async function route(
       ok: true,
       buildId: served.renderer.buildId,
       protocolVersion: PROTOCOL_VERSION,
-      waavyVersion: WAAVY_VERSION
+      waavyVersion: WAAVY_VERSION,
+      pid: process.pid
     });
     log.status = 200;
     return;

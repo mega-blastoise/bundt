@@ -1,0 +1,66 @@
+---
+title: Local Development
+description: waavy serve --dev rebuilds on change and serves assets for you.
+---
+
+# Local Development
+
+## Dev mode
+
+```bash
+npx waavy serve --dev --port 4100
+# or on a socket, like production:
+npx waavy serve --dev --socket /tmp/waavy.sock
+```
+
+Dev mode:
+
+- builds a release from your source (`waavy.config.*` in the current
+  directory, or `--root <dir>` / `--config <path>`);
+- **rebuilds on every change** to your pages, components, CSS or config;
+- keeps serving the **last good build** if a change breaks the build, and logs
+  the error;
+- **serves the client assets** at `publicPath` itself, so your host doesn't
+  need a static route while developing.
+
+Point your backend at the dev renderer exactly as you would in production;
+only the startup command differs.
+
+<Callout variant="warning">
+Dev mode is not for production: it watches files and keeps superseded builds loaded in memory until it exits. Use `waavy serve --release <dir>` in production.
+</Callout>
+
+Dev builds are written to `node_modules/.cache/waavy/dev/`.
+
+## Readable builds
+
+`waavy build --no-minify` skips minification and uses React's development
+builds, so stack traces and hydration warnings are readable:
+
+```bash
+npx waavy build --no-minify --out dist/waavy-debug
+```
+
+## Rendering from the terminal
+
+`waavy render` is handy for checking one page quickly:
+
+```bash
+npx waavy build
+npx waavy render --release dist/waavy --page product --props-file fixtures/lamp.json
+```
+
+Warnings and errors arrive on stderr as JSON lines; the exit status tells you
+what went wrong (see [Error Codes](/reference/errors)).
+
+## Hydration problems
+
+Open the browser console. Waavy logs with a `[waavy]` prefix:
+
+- a **build ID mismatch** warning means the HTML and the JavaScript come from
+  different builds — usually a stale CDN cache or a deploy in progress;
+- React hydration errors mean the component rendered differently in the
+  browser than on the server for the same props — look for time, randomness or
+  browser-only APIs used during render.
+
+A page that fails to hydrate still shows its server-rendered HTML.

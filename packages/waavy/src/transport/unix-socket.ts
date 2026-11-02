@@ -5,6 +5,10 @@
  * listening, waavy checks whether the path is answered by a live server: if
  * so it refuses to start (two renderers must not share one path); if not,
  * the stale file is removed.
+ *
+ * Paths longer than the OS limit for `sun_path` are rejected up front: Bun
+ * binds them anyway, but no other client (curl, Python, the Rust crate) can
+ * connect, so the server would announce `listening` and never be reached.
  */
 
 import { lstat, unlink } from 'node:fs/promises';
@@ -16,12 +20,36 @@ import { WaavyError } from '../core/errors';
 const PROBE_TIMEOUT_MS = 500;
 
 /**
+ * Longest unix socket path, in bytes, that clients can connect to:
+ * `sizeof(sun_path)` minus the terminating NUL. 104 on macOS and the BSDs,
+ * 108 on Linux.
+ */
+export function maxSocketPathBytes(platform: NodeJS.Platform = process.platform): number {
+  return platform === 'darwin' || platform === 'freebsd' || platform === 'openbsd' ? 103 : 107;
+}
+
+/**
+ * @throws {WaavyError} `INVALID_REQUEST` if `path` is too long to connect to.
+ */
+export function checkSocketPathLength(path: string, platform: NodeJS.Platform = process.platform): void {
+  const bytes = Buffer.byteLength(path);
+  const max = maxSocketPathBytes(platform);
+  if (bytes > max) {
+    throw new WaavyError(
+      'INVALID_REQUEST',
+      `Socket path is ${bytes} bytes; ${platform} allows at most ${max}. Use a shorter path, such as one under /tmp: ${path}`
+    );
+  }
+}
+
+/**
  * Makes `path` available for `listen()`.
  *
- * @throws {WaavyError} `INVALID_REQUEST` if the path is in use by a live
- *   server or exists and is not a socket.
+ * @throws {WaavyError} `INVALID_REQUEST` if the path is too long, in use by
+ *   a live server, or exists and is not a socket.
  */
 export async function claimSocketPath(path: string): Promise<void> {
+  checkSocketPathLength(path);
   const stats = await lstat(path).catch(() => undefined);
   if (stats === undefined) return;
   if (!stats.isSocket()) {

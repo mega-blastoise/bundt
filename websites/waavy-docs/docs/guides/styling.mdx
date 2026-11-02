@@ -1,0 +1,55 @@
+---
+title: Styling
+description: Importing CSS from pages and how stylesheets reach the document.
+---
+
+# Styling
+
+Import CSS from a page or any component it uses:
+
+```tsx
+// pages/product.tsx
+import './product.css';
+import '../components/button.css';
+
+export default function Product() {
+  return <h1 className="product-title">Desk lamp</h1>;
+}
+```
+
+At build time waavy bundles each page's CSS — direct and transitive imports
+— into hashed files under `client/`, records them in the release manifest,
+and links them from the document `<head>`:
+
+```html
+<link rel="stylesheet" href="/assets/product-77e1c2.css">
+```
+
+Because the stylesheets are in the `<head>` of the server-rendered HTML, the
+page is styled on first paint, before any JavaScript runs.
+
+## Things to know
+
+- CSS is served by your host along with the rest of `client/`, at
+  `publicPath`. If styles are missing, check that your static file route
+  covers `.css` files.
+- File names are content-hashed: cache them with a long `max-age` and
+  `immutable`.
+- Global stylesheets work the same way: import them from each page that needs
+  them (or from a shared layout component).
+- CSS-in-JS libraries that inject styles at runtime work after hydration, but
+  their server-side extraction is not integrated, so expect a flash of
+  unstyled content with those. Plain CSS imports are the supported path.
+
+## Extra head content
+
+For fonts, external stylesheets or `<meta>` tags, use the request's
+`document.head` (trusted HTML only):
+
+```json
+{
+  "document": {
+    "head": "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\">"
+  }
+}
+```

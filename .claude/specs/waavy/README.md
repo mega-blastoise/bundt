@@ -7,9 +7,10 @@
 | `WAAVY_P2_SERVE_RS.md` / `WAAVY_P2_PROMPT.md` | Phase 2 — `waavy serve` (HTTP) + Rust `Client` + axum example |
 | `WAAVY_P3_DIST.md` / `WAAVY_P3_PROMPT.md` | Phase 3 — per-platform packages, release workflow, Supervisor, 0.3.0 |
 | `WAAVY_P4_SSG.md` / `WAAVY_P4_PROMPT.md` | Phase 4 — `waavy ssg` from job lists |
+| `WAAVY_P5_STATUS.md` / `WAAVY_P5_PROMPT.md` | Phase 5 — `GET /status`, `Client::status()`, `waavy dashboard` (0.4.0) |
 | `spikes/` | Spike results recorded during phases (created by P1/P2) |
 
-Order: P1 → P2 → P3. P4 needs only P1 and can run alongside P2/P3.
+Order: P1 → P2 → P3. P4 needs only P1 and can run alongside P2/P3. P5 needs P3 and is independent of P4.
 
 Start a phase by pasting its `_PROMPT.md` into a fresh session at the repo root.
 
@@ -32,3 +33,6 @@ Start a phase by pasting its `_PROMPT.md` into a fresh session at the repo root.
 | D13 | Page CSS imports in P1 | accepted 2026-10-28 |
 | D14 | Publish crate `waavy` to crates.io in P3 | accepted 2026-10-28 |
 | D15 | musl binaries as GitHub release assets only | proposed (P3 spec) |
+| D16 | Dashboard is a separate `waavy dashboard` process, not a `serve` admin port | proposed (P5 spec) |
+| D17 | Dashboard UI: plain HTML + ES module, no framework | accepted 2026-11-02 |
+| D18 | `/status` excluded from the access log and render stats | proposed (P5 spec) |

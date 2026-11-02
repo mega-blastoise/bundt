@@ -1,0 +1,44 @@
+---
+title: CI
+description: The waavy jobs in ci.yml, what they run, and how to debug failures.
+---
+
+# CI
+
+`.github/workflows/ci.yml` runs on pull requests and pushes to `main`.
+
+| Job | Runner(s) | Runs |
+|---|---|---|
+| **Build & Test** | ubuntu-latest | workspace typecheck/build/test (on PRs filtered to changed packages), then Playwright Chromium + waavy e2e |
+| **waavy Rust client** | ubuntu-latest | `waavy-rs-prepare.sh`, rustfmt check, clippy (all-features and no-default-features), tests, rustdoc, axum browser test |
+| **waavy matrix** | ubuntu-latest, ubuntu-24.04-arm, macos-15, macos-15-intel | build, host binary, CLI/serve/launcher/packaging contract tests, install test |
+| **waavy windows (experimental)** | windows-latest | build, `--version`, TCP serve smoke — `continue-on-error` |
+
+`macos-13` (named in the original P3 spec) is retired; Intel macOS coverage
+is `macos-15-intel`.
+
+## Debugging a failure
+
+```bash
+gh run list -R mega-blastoise/bundt --branch <branch> --limit 5
+gh run view <run-id> -R mega-blastoise/bundt --json jobs \
+  -q '.jobs[] | "\(.conclusion)\t\(.name)\t" + ([.steps[] | select(.conclusion=="failure") | .name] | join(", "))'
+gh run view <run-id> -R mega-blastoise/bundt --log-failed > failed.log
+grep -nE '\(fail\)|error:|##\[error\]' failed.log | head
+```
+
+## Failures seen so far
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `Executable doesn't exist … chrome-headless-shell` in the *Test* step | `bun test src test` matched `e2e/` by substring | `--path-ignore-patterns 'e2e/**'` in the test script |
+| `this test timed out after 5000ms` on macos-15-intel | `npm pack` in a test on a slow runner | explicit per-test timeout |
+| intermittent `Connect(… No such file or directory)` in Rust integration tests | temp-dir names from timestamps collided | atomic counter |
+| `bun install --frozen-lockfile` warnings about 404 platform packages (pre-release) | optional deps not yet published | harmless; Bun only warns |
+
+## Caches
+
+Bun's install cache is keyed by OS, arch and `bun.lock`; Cargo's by
+`crates/**/Cargo.toml`. If a job behaves differently from a clean checkout,
+re-run with caches bypassed by bumping the key or using
+`gh cache delete`.

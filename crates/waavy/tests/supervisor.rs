@@ -182,3 +182,51 @@ async fn missing_binary_and_settings_are_spawn_errors() {
     let error = Supervisor::builder().release("r").socket("s").spawn().await.expect_err("binary is required");
     assert!(error.to_string().contains(".binary("), "{error}");
 }
+
+/// A renderer left running on the socket must not be mistaken for the new
+/// one: the second supervisor fails up front and names the holder, and the
+/// first keeps serving.
+#[tokio::test]
+async fn refuses_a_socket_already_served() {
+    let Some((bin, release)) = environment() else { return };
+    let socket = socket_path("occupied");
+    let first = Supervisor::builder()
+        .binary(&bin)
+        .release(&release)
+        .socket(&socket)
+        .on_event(|_| {})
+        .spawn()
+        .await
+        .expect("first supervisor starts");
+    let holder = first.pid().expect("first renderer pid");
+
+    let error = Supervisor::builder()
+        .binary(&bin)
+        .release(&release)
+        .socket(&socket)
+        .on_event(|_| {})
+        .spawn()
+        .await
+        .expect_err("second supervisor must not report ready");
+    assert!(matches!(&error, Error::Spawn(io) if io.kind() == std::io::ErrorKind::AddrInUse), "{error:?}");
+    assert!(error.to_string().contains(&format!("pid {holder}")), "{error}");
+
+    let health = first.client().health().await.expect("first renderer still healthy");
+    assert_eq!(health.pid, Some(holder));
+    first.shutdown().await.expect("shutdown");
+}
+
+#[tokio::test]
+async fn rejects_a_socket_path_over_the_os_limit() {
+    let Some((bin, release)) = environment() else { return };
+    let socket = std::env::temp_dir().join(format!("{}.sock", "s".repeat(120)));
+    let error = Supervisor::builder()
+        .binary(&bin)
+        .release(&release)
+        .socket(&socket)
+        .on_event(|_| {})
+        .spawn()
+        .await
+        .expect_err("too-long path must fail, not time out");
+    assert!(matches!(&error, Error::Spawn(io) if io.kind() == std::io::ErrorKind::InvalidInput), "{error:?}");
+}

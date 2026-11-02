@@ -1,0 +1,95 @@
+---
+title: Pages and Props
+description: How to write pages, what props can contain, and what pages must not do.
+---
+
+# Pages and Props
+
+## Writing a page
+
+A page is a `.tsx` (or `.jsx`) module with a **default export** that is a
+React component. Waavy reads nothing else from the module.
+
+```tsx
+// pages/order.tsx
+import { OrderSummary } from '../components/order-summary';
+
+export type OrderProps = {
+  id: string;
+  items: Array<{ sku: string; name: string; quantity: number }>;
+  total: number;
+};
+
+export default function Order(props: OrderProps) {
+  return <OrderSummary {...props} />;
+}
+```
+
+Pages can import anything a browser bundle can: your own components, npm
+packages, CSS. Shared code between pages is split into common chunks
+automatically.
+
+Register every page in `waavy.config.ts`; a page that isn't registered
+doesn't exist for the renderer (`PAGE_NOT_FOUND`).
+
+## Pages run in two places
+
+The same page code runs **in the renderer** (to produce HTML) and **in the
+browser** (to hydrate). So a page must be browser-safe:
+
+- no `fs`, database clients, environment secrets or other server-only modules;
+- no data fetching during the server render — the props are the data;
+- render the same output on both sides for the same props (no
+  `Math.random()` or `Date.now()` in render output; put those in effects).
+
+Effects (`useEffect`), event handlers and browser APIs work as usual after
+hydration.
+
+<Callout variant="tip">
+Need data on the client after load — infinite scroll, live updates? Fetch it from your own API in an effect, exactly as you would in any React app. Waavy only handles the first render.
+</Callout>
+
+## Props
+
+Props are whatever JSON **object** your server sends:
+
+- strings, numbers, booleans, `null`, arrays and nested objects;
+- not functions, class instances, `Date`, `Map`, `undefined` — they don't
+  exist in JSON. Send dates as ISO strings and parse them in the component.
+
+The top level must be an object (`{}` is fine); an array or string is
+rejected with `INVALID_REQUEST`.
+
+Props are embedded in the HTML so the browser can hydrate, so **everything in
+props is visible to the user**. Don't send data the page shouldn't reveal.
+
+Large props make large documents. Send what the first render needs; fetch the
+rest later.
+
+## Document metadata
+
+The page component renders the body. The `<title>`, `<html lang>` and extra
+`<head>` content come from the render request, not from the component:
+
+```json
+{
+  "v": 1,
+  "page": "order",
+  "props": { "id": "A-1001", "items": [], "total": 0 },
+  "document": {
+    "title": "Order A-1001",
+    "lang": "en-GB",
+    "head": "<meta name=\"robots\" content=\"noindex\">"
+  }
+}
+```
+
+`title` is escaped for you. `head` is inserted verbatim — build it from
+trusted, static strings only, never from user input.
+
+## Page IDs
+
+IDs are lowercase segments of `[a-z0-9_-]` separated by `/`:
+`home`, `checkout/payment`, `admin/user_list`. Choose IDs for stability, not
+for URLs — your server maps URLs to IDs, so you can rename routes without
+rebuilding.
