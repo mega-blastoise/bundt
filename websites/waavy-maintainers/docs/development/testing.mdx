@@ -48,6 +48,10 @@ WAAVY_E2E_AXUM=1 bun test e2e/axum.test.ts
   already, so a `mkdtemp` dir plus a UUID file name is too long. Use short
   names. Bun can bind *and* connect to longer paths, so Bun-only tests
   won't catch this; curl, Python and tokio can't connect to them.
+- **Stale `dist/` after a version bump.** `bun run test` recompiles only the
+  binary. The bundled-CLI and launcher tests run `dist/cli.js` and
+  `dist/launcher.js` as they are, so run `bun run build` first, as CI does.
+  Otherwise those tests check the previous version.
 - **`--log-level` in tests.** `test/support/serve.ts` waits for the
   `listening` event; levels other than `info` suppress it, and the helper
   rejects them.

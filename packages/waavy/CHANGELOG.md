@@ -7,14 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-02
+
+Fixes for two bugs found by running 0.3.0 in a real Rust host.
+
+### Added
+
+- `GET /health` includes `pid`, the renderer's process ID. The Rust `Health` struct has a matching `pid: Option<u32>` field. Code that builds a `Health` with a struct literal must add it; deserializing is unaffected.
+
 ### Fixed
 
 - `waavy serve --socket` rejects paths longer than the OS limit for unix sockets (103 bytes on macOS and the BSDs, 107 on Linux) with `INVALID_REQUEST`, exit 10. Previously it logged `listening` on a socket no non-Bun client could connect to.
 - Rust `Supervisor`: before each start, fails with `Error::Spawn` (`AddrInUse`) if another process already answers on the socket, instead of reporting `Ready` against it while its own renderer crash-looped. Also fails with `Error::Spawn` (`InvalidInput`) on an over-long socket path, instead of `Timeout`.
-
-### Added
-
-- `GET /health` includes `pid`, the renderer's process ID. The Rust `Health` struct has a matching `pid: Option<u32>` field.
 
 ## [0.3.0] - 2026-10-28
 

@@ -16,6 +16,7 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 
 import { ERROR_CODES, type ErrorCode } from '../src/core/errors';
+import { WAAVY_VERSION } from '../src/core/version';
 import { buildFixtureRelease, CLI_BINARY, CLI_BUNDLE, CLI_LAUNCHER, FIXTURE_ROOT, type FixtureRelease } from './support/fixture';
 
 /** The executables under test; the binary-based ones are included when it has been compiled. */
@@ -93,7 +94,7 @@ describe.each(EXECUTABLES)('%s', (_label, command) => {
 
   test('--version prints the package version', async () => {
     const child = Bun.spawn([...command, '--version'], { stdout: 'pipe' });
-    expect(await new Response(child.stdout).text()).toContain('0.3.0');
+    expect(await new Response(child.stdout).text()).toStartWith(`waavy/${WAAVY_VERSION} `);
   });
 
   test('buffered render: HTML on stdout, nothing on stderr', async () => {
